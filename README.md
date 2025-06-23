@@ -49,6 +49,6 @@ PPL Plugin pro PrestaShop je výkonný nástroj, který umožňuje snadnou integ
 
 ## Podpora
 
-Máte-li jakékoli dotazy nebo problémy, kontaktujte nás na [support@example.com](mailto:support@example.com).
+Máte-li jakékoli dotazy nebo problémy, kontaktujte nás na [cisteam@ppl.cz](mailto:cisteam@ppl.cz).
 
 
