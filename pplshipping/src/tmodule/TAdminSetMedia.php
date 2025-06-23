@@ -14,6 +14,8 @@ trait TAdminSetMedia
 
     public function hookActionAdminControllerSetMedia($params)
     {
+        $assetGeneratedName = "-1.0.1";
+
         /**
          * @var \pplshipping $this
          */
@@ -21,11 +23,11 @@ trait TAdminSetMedia
         if (!$ver)
             $ver = time();
         $this->context->controller->addJS($this->_path . 'muiadmin/static/js/bundle.js?' . $ver, false);
-        $this->context->controller->addJs($this->_path . 'assets/js/admin-order.js?' . $ver, false);
-        $this->context->controller->addJs($this->_path . 'assets/js/admin-orders.js?' . $ver, false);
-        $this->context->controller->addCSS($this->_path . "assets/css/admin-order.css?" . $ver, "all", null, false);
-        $this->context->controller->addJS($this->_path . "assets/js/ppl-map.js?" . $ver, false);
-        $this->context->controller->addCSS($this->_path . 'assets/css/ppl-map.css?' . $ver, "all", null, false);
+        $this->context->controller->addJs($this->_path . "assets/js/admin-order{$assetGeneratedName}.js?" . $ver, false);
+        $this->context->controller->addJs($this->_path . "assets/js/admin-orders{$assetGeneratedName}.js?" . $ver, false);
+        $this->context->controller->addCSS($this->_path . "assets/css/admin-order{$assetGeneratedName}.css?" . $ver, "all", null, false);
+        $this->context->controller->addJS($this->_path . "assets/js/ppl-map{$assetGeneratedName}.js?" . $ver, false);
+        $this->context->controller->addCSS($this->_path . "assets/css/ppl-map{$assetGeneratedName}.css?" . $ver, "all", null, false);
     }
 
     private function getTMediaSetMediaPathForGenerate($name)

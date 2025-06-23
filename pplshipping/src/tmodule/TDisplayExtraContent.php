@@ -12,7 +12,7 @@ trait TDisplayExtraContent {
 
     public function hookDisplayHeader($params)
     {
-        $assetGeneratedName = "-68594a2ba784f6.68068903";
+        $assetGeneratedName = "-1.0.1";
         /**
          * @var \pplshipping $this
          */
