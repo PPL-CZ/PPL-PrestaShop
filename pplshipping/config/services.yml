@@ -1,0 +1,91 @@
+services:
+  AdminCodelistPPLController:
+    class: AdminCodelistPPLController
+    tags:
+       - { name: 'controller.service_arguments' }
+    autowire: true
+    calls:
+      - [ setUserProvider, [ "@prestashop.user_provider"] ]
+      - [ setTokenManager, [ "@security.csrf.token_manager"]]
+      - [ setContainer, ["@service_container"]]
+
+  AdminOrderPPLController:
+    class: AdminOrderPPLController
+    tags:
+      - { name: 'controller.service_arguments' }
+    autowire: true
+    calls:
+      - [ setUserProvider, [ "@prestashop.user_provider"] ]
+      - [ setTokenManager, ["@security.csrf.token_manager"]]
+      - [ setContainer, ["@service_container"]]
+
+  AdminSettingPPLController:
+    class: AdminSettingPPLController
+    tags:
+      - { name: 'controller.service_arguments' }
+    autowire: true
+    calls:
+      - [ setUserProvider, [ "@prestashop.user_provider"] ]
+      - [ setTokenManager, ["@security.csrf.token_manager"]]
+      - [ setContainer, [ "@service_container" ] ]
+
+  AdminShipmentBatchPPLController:
+    class: AdminShipmentBatchPPLController
+    tags:
+      - { name: 'controller.service_arguments' }
+    autowire: true
+    calls:
+      - [ setUserProvider, [ "@prestashop.user_provider"] ]
+      - [ setTokenManager, ["@security.csrf.token_manager"]]
+      - [ setContainer, [ "@service_container" ] ]
+
+  AdminShipmentPPLController:
+    class: AdminShipmentPPLController
+    tags:
+      - { name: 'controller.service_arguments' }
+    autowire: true
+    calls:
+      - [ setUserProvider, [ "@prestashop.user_provider"] ]
+      - [ setTokenManager, ["@security.csrf.token_manager"]]
+      - [ setContainer, [ "@service_container" ] ]
+
+  AdminFilePPLController:
+    class: AdminFilePPLController
+    tags:
+      - { name: 'controller.service_arguments' }
+    autowire: true
+    calls:
+      - [ setUserProvider, [ "@prestashop.user_provider"] ]
+      - [ setTokenManager, ["@security.csrf.token_manager"]]
+      - [ setContainer, [ "@service_container" ] ]
+
+  AdminCollectionPPLController:
+    class: AdminCollectionPPLController
+    tags:
+      - { name: 'controller.service_arguments' }
+    autowire: true
+    calls:
+      - [ setUserProvider, [ "@prestashop.user_provider"] ]
+      - [ setTokenManager, ["@security.csrf.token_manager"]]
+      - [ setContainer, [ "@service_container" ] ]
+
+  AdminLogPPLController:
+    class: AdminLogPPLController
+    tags:
+      - { name: 'controller.service_arguments' }
+    autowire: true
+    calls:
+      - [ setUserProvider, [ "@prestashop.user_provider"] ]
+      - [ setTokenManager, ["@security.csrf.token_manager"]]
+      - [ setContainer, [ "@service_container" ] ]
+
+  PPLTwigExtension:
+    class: PPLShipping\Twig\PPLShippingExtension
+    tags:
+      - { name:  'twig.extension' }
+
+  PPLArguments:
+    class: PPLShipping\Listener\ArgumentResolverListener
+    tags: [ { name: kernel.event_listener, event: kernel.controller_arguments} ]
+    public: true
+

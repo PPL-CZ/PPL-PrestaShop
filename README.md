@@ -38,13 +38,13 @@ PPL Plugin pro PrestaShop je výkonný nástroj, který umožňuje snadnou integ
 
 ## Instalace
 
-1. Stáhněte si plugin z [PrestaShop Addons Marketplace](https://addons.prestashop.com/).
+1. Stáhněte si plugin z [Github](https://github.com/PPL-CZ/PPL-PrestaShop/releases).
 2. Nahrajte a aktivujte plugin v sekci **Moduly > Správa modulů** v administraci PrestaShop.
 3. Přejděte do sekce **PPL Plugin** a nastavte požadované parametry.
 
 ## Požadavky
 
-- PrestaShop 1.7 a vyšší
+- PrestaShop 8.* a vyšší
 - Aktivní účet u PPL
 
 ## Podpora

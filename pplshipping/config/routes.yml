@@ -1,0 +1,358 @@
+pplshipping_codelist_replacement:   # Název tvé vlastní route
+  path: /admin/pplshipping/codelist/replacementPath   # Cesta, kterou route obsluhuje, může obsahovat dynamické parametry
+  methods: [GET]  # HTTP metody (např. GET, POST)
+
+pplshipping_codelist_methods:   # Název tvé vlastní route
+  path: /admin/pplshipping/codelist/methods   # Cesta, kterou route obsluhuje, může obsahovat dynamické parametry
+  methods: [GET]  # HTTP metody (např. GET, POST)
+  defaults:
+    _controller: 'AdminCodelistPPLController::GetMethods'  # Cesta k controlleru a metodě
+
+pplshipping_codelist_currencies:   # Název tvé vlastní route
+  path: /admin/pplshipping/codelist/currencies   # Cesta, kterou route obsluhuje, může obsahovat dynamické parametry
+  methods: [GET]  # HTTP metody (např. GET, POST)
+  defaults:
+    _controller: 'AdminCodelistPPLController::GetCurrencies'  # Cesta k controlleru a metodě
+
+pplshipping_codelist_countries:   # Název tvé vlastní route
+  path: /admin/pplshipping/codelist/countries   # Cesta, kterou route obsluhuje, může obsahovat dynamické parametry
+  methods: [GET]  # HTTP metody (např. GET, POST)
+  defaults:
+    _controller: 'AdminCodelistPPLController::GetCountries'  # Cesta k controlleru a metodě
+
+pplshipping_codelist_orderstates:   # Název tvé vlastní route
+  path: /admin/pplshipping/codelist/orderStates   # Cesta, kterou route obsluhuje, může obsahovat dynamické parametry
+  methods: [GET]  # HTTP metody (např. GET, POST)
+  defaults:
+    _controller: 'AdminCodelistPPLController::GetOrderStates'  # Cesta k controlleru a metodě
+
+
+
+pplshipping_setting_replacement:   # Název tvé vlastní route
+  path: /admin/pplshipping/setting/replacementPath   # Cesta, kterou route obsluhuje, může obsahovat dynamické parametry
+  methods: [GET]  # HTTP metody (např. GET, POST)
+
+
+pplshipping_refresh_key:
+  path: /admin/pplshipping/setting/key
+  methods: [POST]
+  defaults:
+    _controller: AdminSettingPPLController:RefreshKey
+
+pplshipping_setting_api_get:
+  path: /admin/pplshipping/setting/myapi
+  methods: [GET]
+  defaults:
+    _controller: AdminSettingPPLController::GetApi
+
+pplshipping_setting_api_post:
+  path: /admin/pplshipping/setting/myapi
+  methods: [PUT, POST]
+  defaults:
+    _controller: AdminSettingPPLController::SetApi
+
+pplshipping_setting_shop_groups:
+  path: /admin/pplshipping/setting/shops
+  methods: [GET]
+  defaults:
+    _controller: AdminSettingPPLController::GetShopGroups
+
+pplshipping_setting_get_addresses:
+  path: /admin/pplshipping/setting/addresses
+  methods: [GET]
+  defaults:
+    _controller: AdminSettingPPLController::GetAddresses
+
+pplshipping_setting_set_addresses:
+  path: /admin/pplshipping/setting/addresses
+  methods: [POST, PUT]
+  defaults:
+    _controller: AdminSettingPPLController::SetAddresses
+
+pplshipping_setting_remove_addresses:
+  path: /admin/pplshipping/setting/addresses
+  methods: [DELETE]
+  defaults:
+    _controller: AdminSettingPPLController::RemoveAddresses
+
+
+pplshipping_setting_get_print:
+  path: /admin/pplshipping/setting/print
+  methods: [GET]
+  defaults:
+    _controller: AdminSettingPPLController::GetPrint
+
+pplshipping_setting_set_print:
+  path: /admin/pplshipping/setting/print
+  methods: [PUT, POST]
+  defaults:
+    _controller: AdminSettingPPLController::SetPrint
+
+
+pplshipping_setting_get_available_printers:
+  path: /admin/pplshipping/setting/availablePrinters
+  methods: [GET]
+  defaults:
+    _controller: AdminSettingPPLController::GetAvailablePrinters
+
+pplshipping_setting_get_shipment_phases:
+  path: /admin/pplshipping/setting/phases
+  methods: [GET]
+  defaults:
+    _controller: AdminSettingPPLController::GetShipmentPhases
+
+
+pplshipping_setting_set_phases:
+  path: /admin/pplshipping/setting/phase
+  methods: [POST,PUT]
+  defaults:
+    _controller: AdminSettingPPLController::SetPhase
+
+pplshipping_setting_get_carriers:
+  path: /admin/pplshipping/setting/carriers
+  methods: [GET]
+  defaults:
+    _controller: AdminSettingPPLController::GetCarriers
+
+
+pplshipping_setting_put_carrier:
+  path: /admin/pplshipping/setting/carriers
+  methods: [PUT,POST]
+  defaults:
+    _controller: AdminSettingPPLController::PutCarrier
+
+pplshipping_setting_get_parcelplaces:
+  path: /admin/pplshipping/setting/parcelplaces
+  methods: [GET]
+  defaults:
+    _controller: AdminSettingPPLController::GetParcelPlaces
+
+pplshipping_setting_put_parcelplaces:
+  path: /admin/pplshipping/setting/parcelplaces
+  methods: [PUT]
+  defaults:
+    _controller: AdminSettingPPLController::SetParcelPlaces
+
+
+pplshipping_shipment_replacement:
+  path: /admin/pplshipping/shipment/replacementPath   # Cesta, kterou route obsluhuje, může obsahovat dynamické parametry
+  methods: [GET]  # HTTP metody (např. GET, POST)
+
+pplshipping_shipment_get_shipment:
+  path: /admin/pplshipping/shipment/{id}
+  methods: [GET]
+  defaults:
+    _controller: AdminShipmentPPLController::GetShipment
+  requirements:
+    id: \d+
+
+pplshipping_shipment_create_shipment:
+  path: /admin/pplshipping/shipment
+  methods: [POST]
+  defaults:
+    _controller: AdminShipmentPPLController::CreateShipment
+
+
+
+pplshipping_shipment_update_shipment:
+  path: /admin/pplshipping/shipment/{id}
+  methods: [PUT]
+  defaults:
+    _controller: AdminShipmentPPLController::UpdateShipment
+  requirements:
+    id: \d+
+
+pplshipping_shipment_update_shipment_recipient:
+  path: /admin/pplshipping/shipment/{id}/recipient
+  methods: [PUT]
+  defaults:
+    _controller: AdminShipmentPPLController::UpdateRecipientAddress
+  requirements:
+    id: \d+
+
+pplshipping_shipment_update_sender_recipient:
+  path: /admin/pplshipping/shipment/{id}/sender
+  methods: [PUT]
+  defaults:
+    _controller: AdminShipmentPPLController::UpdateSenderAddress
+  requirements:
+    id: \d+
+
+pplshipping_shipment_update_shipment_parcel:
+  path: /admin/pplshipping/shipment/{id}/parcel
+  methods: [PUT]
+  defaults:
+    _controller: AdminShipmentPPLController::UpdateShipmentParcel
+  requirements:
+    id: \d+
+
+pplshipping_shipment_update_shipment_refresh_labels:
+  path: /admin/pplshipping/shipment/{id}/refreshLabels
+  methods: [PUT]
+  defaults:
+    _controller: AdminShipmentPPLController::ShipmentRefreshLabels
+  requirements:
+    id: \d+
+
+pplshipping_shipment_update_shipment_refresh_states:
+  path: /admin/pplshipping/shipment/{id}/refreshStates
+  methods: [PUT]
+  defaults:
+    _controller: AdminShipmentPPLController::ShipmentRefreshStates
+  requirements:
+    id: \d+
+
+pplshipping_shipment_update_shipment_cancel_package:
+  path: /admin/pplshipping/shipment/{id}/cancelPackage/{packageId}
+  methods: [PUT]
+  defaults:
+    _controller: AdminShipmentPPLController::ShipmentCancelPackage
+  requirements:
+    id: \d+
+    packageId: \d+
+
+pplshipping_shipment_update_shipment_remove_package:
+  path: /admin/pplshipping/shipment/{id}/removePackage
+  methods: [PUT]
+  defaults:
+    _controller: AdminShipmentPPLController::ShipmentRemovePackage
+  requirements:
+    id: \d+
+    packageId: \d+
+
+pplshipping_shipment_update_shipment_add_package:
+  path: /admin/pplshipping/shipment/{id}/addPackage
+  methods: [PUT]
+  defaults:
+    _controller: AdminShipmentPPLController::ShipmentAddPackage
+  requirements:
+    id: \d+
+    packageId: \d+
+
+pplshipping_shipment_update_shipment_remove:
+  path: /admin/pplshipping/shipment/{id}
+  methods: [DELETE]
+  defaults:
+    _controller: AdminShipmentPPLController::ShipmentRemove
+  requirements:
+    id: \d+
+    packageId: \d+
+
+
+pplshipping_order_replacement:
+  path: /admin/pplshipping/order/replacementPath   # Cesta, kterou route obsluhuje, může obsahovat dynamické parametry
+  methods: [GET]  # HTTP metody (např. GET, POST)
+
+
+pplshipping_order_create_shipment:
+  path: /admin/pplshipping/order/{id}/shipment
+  methods: [POST]
+  defaults:
+    _controller: AdminOrderPPLController::CreateShipment
+  requirements:
+    id: \d+
+
+pplshipping_order_render:
+  path: /admin/pplshipping/order/{id}/render
+  methods: [GET]
+  defaults:
+    _controller: AdminOrderPPLController::RenderOrder
+  requirements:
+    id: \d+
+
+pplshipping_order_redirect:
+  path: /admin/pplshipping/order/{id}/redirect
+  methods: [GET]
+  defaults:
+    _controller: AdminOrderPPLController::RedirectOrder
+  requirements:
+    id: \d+
+
+
+
+
+pplshipping_shipmentbatch_replacement:
+  path: /admin/pplshipping/shipmentBatch/replacementPath
+  methods: [GET]
+
+pplshipping_shipmentbatch_prepare_labels:
+  path: /admin/pplshipping/shipmentBatch/prepare
+  methods: [POST]
+  defaults:
+    _controller: AdminShipmentBatchPPLController::PrepareLabels
+
+pplshipping_shipmentbatch_create_labels:
+  path: /admin/pplshipping/shipmentBatch/createLabels
+  methods: [POST]
+  defaults:
+    _controller: AdminShipmentBatchPPLController::CreateLabels
+
+pplshipping_shipmentbatch_refresh_labels:
+  path: /admin/pplshipping/shipmentBatch/{id}/refreshLabels
+  methods: [PUT]
+  defaults:
+    _controller: AdminShipmentBatchPPLController::RefreshLabels
+
+pplshipping_shipmentbatch_download:
+  path: /admin/pplshipping/shipmentBatch/{batchId}/download
+  methods: [GET]
+  defaults:
+    _controller: AdminFilePPLController::Download
+
+pplshipping_collection_replacement:
+  path: /admin/pplshipping/collection/replacementPath
+  methods: [GET]
+
+pplshipping_collection_get:
+  path: /admin/pplshipping/collection
+  methods: [ GET ]
+  defaults:
+    _controller: AdminCollectionPPLController::GetCollections
+
+pplshipping_collection_address:
+  path: /admin/pplshipping/collection/address
+  methods: [ GET ]
+  defaults:
+    _controller: AdminCollectionPPLController::GetAddress
+
+pplshipping_collection_create:
+  path: /admin/pplshipping/collection
+  methods: [ POST ]
+  defaults:
+    _controller: AdminCollectionPPLController::CreateCollection
+
+pplshipping_collection_last:
+  path: /admin/pplshipping/collection/last
+  methods: [ GET ]
+  defaults:
+    _controller: AdminCollectionPPLController::GetLastCollection
+
+
+pplshipping_collection_cancel_order:
+  path: /admin/pplshipping/collection/{id}/order
+  methods: [ DELETE ]
+  defaults:
+    _controller: AdminCollectionPPLController::CancelCollection
+
+pplshipping_collection_order:
+  path: /admin/pplshipping/collection/{id}/order
+  methods: [ POST ]
+  defaults:
+    _controller: AdminCollectionPPLController::OrderCollection
+
+
+pplshipping_log_replacement:
+  path: /admin/pplshipping/log/replacementPath
+  methods: [GET]
+
+pplshipping_log_get_logs:
+  path: /admin/pplshipping/log
+  methods: [ GET ]
+  defaults:
+    _controller: AdminLogPPLController::GetLogs
+
+pplshipping_log_send_logs:
+  path: /admin/pplshipping/log/send
+  methods: [ POST ]
+  defaults:
+    _controller: AdminLogPPLController::SendLogs

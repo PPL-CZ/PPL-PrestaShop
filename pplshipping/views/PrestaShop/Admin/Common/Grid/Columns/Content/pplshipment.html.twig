@@ -1,0 +1,14 @@
+{% set shipments, errors = get_ppl_shipment(record.id_order), false %}
+{% for item in shipments %}
+    {% set errors = errors or ppl_validate_shipment(item) %}
+    {% for package in item.packages %}
+        {% if package.shipmentNumber %}
+            <a href="http://www.ppl.cz/ship={{package.shipmentNumber}}">{{package.shipmentNumber}}</a><br/>
+        {% endif %}
+    {% endfor %}
+{% endfor %}
+{% if errors %}
+    <div class="alert alert-danger" role="alert">
+        Problém na zásilce
+    </div>
+{% endif %}

@@ -1,0 +1,1 @@
+Zpracováno: {$count}, další: {$next}
