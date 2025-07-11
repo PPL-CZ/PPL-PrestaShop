@@ -9,11 +9,13 @@ class pplshippingFrontMapPPLModuleFrontController extends ModuleFrontController
         parent::initContent();
         header("Content-Type: text/html");
         $maps = pplcz_get_map_args();
+
+        $assetGeneratedName = "-1.0.2";
+
         $this->context->smarty->assign([
             'maps' =>pplcz_get_map_args(),
-
-            "map_css" => Tools::getShopDomainSsl(true, true).__PS_BASE_URI__.'modules/pplshipping/assets/css/ppl-external.css',
-            "map_js" => Tools::getShopDomainSsl(true, true).__PS_BASE_URI__.'modules/pplshipping/assets/js/ppl-external.js',
+            "map_css" => Tools::getShopDomainSsl(true, true).__PS_BASE_URI__."modules/pplshipping/assets/css/ppl-external{$assetGeneratedName}.css",
+            "map_js" => Tools::getShopDomainSsl(true, true).__PS_BASE_URI__."modules/pplshipping/assets/js/ppl-external{$assetGeneratedName}.js",
         ]);
         $this->setTemplate("module:pplshipping/views/templates/front/map.tpl");
     }

@@ -87,6 +87,33 @@ class pplshipping extends CarrierModule {
                 return $success;
             $success = $success && $this->registerHook($class_method);
         }
+
+        /** @var AutoClearer $cacheClearer */
+        if (method_exists($this, 'get')) {
+            try {
+                $cacheClearer = $this->get('prestashop.core.cache.clearer.auto_clearer');
+                $cacheClearer->clear();
+            }
+            catch (\Exception $ex)
+            {
+
+            }
+        }
+
+        // 2) Smarty + XML
+        \Tools::clearSmartyCache();
+        \Tools::clearXMLCache();
+        \Tools::clearAllCache();
+
+        // 3) PHP OPcache (reset bajtkódu)
+        if (function_exists('opcache_reset')) {
+            opcache_reset();
+        }
+        // 4) APCu
+        if (function_exists('apcu_clear_cache')) {
+            apcu_clear_cache();
+        }
+
         return $success;
     }
 
@@ -100,11 +127,6 @@ class pplshipping extends CarrierModule {
 
     }
 
-    public function updateAll()
-    {
-        $this->context->smarty->clearAllCache();
-    }
-
     public function update()
     {
         $this->context->smarty->clearAllCache();
@@ -113,8 +135,33 @@ class pplshipping extends CarrierModule {
 
     public function uninstall()
     {
-        parent::uninstall();
-        $this->context->smarty->clearAllCache();
-        return true;
+        $result = parent::uninstall();
+
+        /** @var AutoClearer $cacheClearer */
+        if (method_exists($this, 'get')) {
+            try {
+                $cacheClearer = $this->get('prestashop.core.cache.clearer.auto_clearer');
+                $cacheClearer->clear();
+            }
+            catch (\Exception $ex)
+            {
+
+            }
+        }
+
+        // 2) Smarty + XML
+        \Tools::clearSmartyCache();
+        \Tools::clearXMLCache();
+        \Tools::clearAllCache();
+
+        // 3) PHP OPcache (reset bajtkódu)
+        if (function_exists('opcache_reset')) {
+            opcache_reset();
+        }
+        // 4) APCu
+        if (function_exists('apcu_clear_cache')) {
+            apcu_clear_cache();
+        }
+        return $result;
     }
 }
