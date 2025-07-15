@@ -2,7 +2,7 @@
 <module>
     <name>pplshipping</name>
     <displayName><![CDATA[PPL]]></displayName>
-    <version><![CDATA[1.0.0]]></version>
+    <version><![CDATA[1.0.3]]></version>
     <description><![CDATA[PPL doprava]]></description>
     <author><![CDATA[PPL]]></author>
     <tab><![CDATA[shipping_logistics]]></tab>
