@@ -11,7 +11,7 @@ trait TInstallDb {
         $queries = <<<MULTILINE
 CREATE TABLE IF NOT EXISTS `{$prefix}ppl_log` (
   `id_ppl_log` int(11) NOT NULL AUTO_INCREMENT,
-  `timestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `timestamp` datetime,
   `message` text NOT NULL,
   `errorhash` varchar(128) NOT NULL,
   PRIMARY KEY (`id_ppl_log`),
