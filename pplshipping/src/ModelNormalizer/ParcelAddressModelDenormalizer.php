@@ -50,9 +50,14 @@ class ParcelAddressModelDenormalizer implements DenormalizerInterface {
         }
         else if ($data instanceof ParcelAddressModel && $type === \PPLParcel::class)
         {
-            $data = isset($context['data']) ? $context['data'] : null;
+            $parcel = null;
+            if (isset($context['data']) && $context['data'])
+                $parcel = $context['data'];
+            if (!$parcel)
+                $parcel = \PPLParcel::getParcelByRemoteId($data->getRemoteId());
+            if (!$parcel)
+                $parcel = new \PPLParcel();
 
-            $parcel = $data ?: \PPLParcel::getParcelByRemoteId($data->getRemoteId()) ?: new \PPLParcel();
             $parcel->city = $data->getCity();
             $parcel->street = $data->getStreet();
             $parcel->lng = $data->getLng();

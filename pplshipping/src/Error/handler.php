@@ -30,7 +30,10 @@ function pplcz_error_handler ($errno, $errstr, $errfile, $errline) {
     if ($pplcz_in_handler)
         return;
 
-    if (strpos($errstr, "Tools::displayPrice")
+    if (strpos($errstr, "Tools::displayPrice") !== false
+        || strpos($errstr, "Tools::displayNumber") !== false
+        || strpos($errstr, "id_ppl_log") !== false
+        || strpos($errstr, "filemtime") !== false
         || strpos($errstr, "Not specifying the optional ShopConstraint parameter is deprecated since version 1.7.8.0") !== false) {
         return;
     }

@@ -13,7 +13,7 @@ use PPLShipping\Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 
 class CPLBatchShipmentDenormalizer implements DenormalizerInterface
 {
-    public const INTEGRATOR = "4542104";
+    public const INTEGRATOR = "4546462";
 
     public function denormalize($data, string $type, ?string $format = null, array $context = [])
     {

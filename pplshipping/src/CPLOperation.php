@@ -64,7 +64,7 @@ class CPLOperation
     public const BASE_URL = "https://api.dhl.com/ecs/ppl/myapi2";
     public const ACCESS_TOKEN_URL = "https://api.dhl.com/ecs/ppl/myapi2/login/getAccessToken";
 
-    public const INTEGRATOR = "4689348";
+    public const INTEGRATOR = "4546462";
 
     public function getAvailableLabelPrinters()
     {

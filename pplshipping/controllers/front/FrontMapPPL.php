@@ -62,9 +62,11 @@ class pplshippingFrontMapPPLModuleFrontController extends ModuleFrontController
             $pplcart->save();
         }
 
+
+        $carrier = (new Carrier(Context::getContext()->cart->id_carrier));
         die($this->module->hookDisplayCarrierExtraContent([
             "cart"=> Context::getContext()->cart,
-            "carrier" => (new Carrier(Context::getContext()->cart->id_carrier))->getFields()
+            "carrier" =>['id_reference' => $carrier->id_reference]
         ]));
 
 
