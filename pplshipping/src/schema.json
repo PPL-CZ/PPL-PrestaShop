@@ -1148,6 +1148,14 @@
                         "type": "string",
                         "nullable": true
                     },
+                    "module": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "active": {
+                        "type": "boolean",
+                        "nullable": true
+                    },
                     "shops": {
                         "type": "array",
                         "items": {

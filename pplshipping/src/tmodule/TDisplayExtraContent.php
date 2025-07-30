@@ -12,17 +12,21 @@ trait TDisplayExtraContent {
 
     public function hookDisplayHeader($params)
     {
-        $assetGeneratedName = "-1.0.3";
-        /**
-         * @var \pplshipping $this
-         */
-        $this->context->controller->addCSS($this->_path . "assets/css/label-method{$assetGeneratedName}.css", false);
-        $this->context->controller->addCSS($this->_path . "assets/css/ppl-map{$assetGeneratedName}.css", false);
-        $this->context->controller->addJS($this->_path . "assets/js/select-parcelshop{$assetGeneratedName}.js", false);
-        $this->context->controller->addJS($this->_path . "assets/js/ppl-map{$assetGeneratedName}.js", false);
-        /**
-         * @var \pplshipping $this
-         */
+        $assetGeneratedName = "-1.0.4";
+        $this->context->controller->registerStylesheet(
+            "ppl-label-method-css", "modules/pplshipping/assets/css/label-method{$assetGeneratedName}.css", [ "media" => "all"]
+        );
+        $this->context->controller->registerStylesheet(
+            "ppl-map-css", "modules/pplshipping/assets/css/ppl-map{$assetGeneratedName}.css", [ "media" => "all"]
+        );
+        $this->context->controller->registerJavascript(
+            "ppl-parcel-shop-js", "modules/pplshipping/assets/js/select-parcelshop{$assetGeneratedName}.js", [ "media" => "all"]
+        );
+        $this->context->controller->registerJavascript(
+            "ppl-label-method-js", "modules/pplshipping/assets/js/ppl-map{$assetGeneratedName}.js", [ "media" => "all"]
+        );
+
+
         $url = $this->context->link->getModuleLink('pplshipping', 'FrontMapPPL');
         \Media::addJsDef([
             "FrontMapPPLController"=> $url

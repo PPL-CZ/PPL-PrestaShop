@@ -10,7 +10,7 @@ class pplshippingFrontMapPPLModuleFrontController extends ModuleFrontController
         header("Content-Type: text/html");
         $maps = pplcz_get_map_args();
 
-        $assetGeneratedName = "-1.0.3";
+        $assetGeneratedName = "-1.0.4";
 
         $this->context->smarty->assign([
             'maps' =>pplcz_get_map_args(),

@@ -18,7 +18,7 @@ class pplshipping extends CarrierModule {
     {
         $this->name = 'pplshipping';
         $this->tab = 'shipping_logistics';
-        $this->version = '1.0.3';
+        $this->version = '1.0.4';
         $this->author = 'PPL';
         $this->need_instance = 1;
         parent::__construct();
@@ -88,6 +88,13 @@ class pplshipping extends CarrierModule {
             $success = $success && $this->registerHook($class_method);
         }
 
+        $this->clearCache();
+
+        return $success;
+    }
+
+    private function clearCache()
+    {
         /** @var AutoClearer $cacheClearer */
         if (method_exists($this, 'get')) {
             try {
@@ -113,8 +120,22 @@ class pplshipping extends CarrierModule {
         if (function_exists('apcu_clear_cache')) {
             apcu_clear_cache();
         }
+        $prefix = _DB_PREFIX_;
+        \Db::getInstance()->execute("TRUNCATE `{$prefix}ppl_log`");
+    }
 
-        return $success;
+    public function enable($force = false)
+    {
+        $result = parent::enable($force);
+        $this->clearCache();
+        return $result;
+    }
+
+    public function disable($force = false)
+    {
+        $result = parent::disable($force);
+        $this->clearCache();
+        return $result;
     }
 
     public function getOrderShippingCost($params, $shipping_cost)
@@ -129,39 +150,14 @@ class pplshipping extends CarrierModule {
 
     public function update()
     {
-        $this->context->smarty->clearAllCache();
+        $this->clearCache();
         return true;
     }
 
     public function uninstall()
     {
         $result = parent::uninstall();
-
-        /** @var AutoClearer $cacheClearer */
-        if (method_exists($this, 'get')) {
-            try {
-                $cacheClearer = $this->get('prestashop.core.cache.clearer.auto_clearer');
-                $cacheClearer->clear();
-            }
-            catch (\Exception $ex)
-            {
-
-            }
-        }
-
-        // 2) Smarty + XML
-        \Tools::clearSmartyCache();
-        \Tools::clearXMLCache();
-        \Tools::clearAllCache();
-
-        // 3) PHP OPcache (reset bajtkódu)
-        if (function_exists('opcache_reset')) {
-            opcache_reset();
-        }
-        // 4) APCu
-        if (function_exists('apcu_clear_cache')) {
-            apcu_clear_cache();
-        }
+        $this->clearCache();
         return $result;
     }
 }

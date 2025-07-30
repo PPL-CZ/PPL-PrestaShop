@@ -30,6 +30,11 @@ function pplcz_error_handler ($errno, $errstr, $errfile, $errline) {
     if ($pplcz_in_handler)
         return;
 
+    if (strpos($errstr, "Tools::displayPrice")
+        || strpos($errstr, "Not specifying the optional ShopConstraint parameter is deprecated since version 1.7.8.0") !== false) {
+        return;
+    }
+
     $pplcz_in_handler = true;
 
     $backtrace = debug_backtrace();
@@ -46,12 +51,16 @@ function pplcz_error_handler ($errno, $errstr, $errfile, $errline) {
         if (!$key) {
             continue;
         }
+        $file = "notfound";
+        if (isset($frame['file']))
+            $file = $frame['file'];
 
-        $inplugin = $inplugin || strpos($frame['file'], $path) !== false;
+        $inplugin = $inplugin || strpos($file, $path) !== false;
         $file = isset($frame['file']) ? $frame['file'] : '[internal function]';
         $line = isset($frame['line']) ? $frame['line'] : '';
         $function = isset($frame['function']) ? $frame['function'] : '';
         $args = isset($frame['args']) ? pplcz_format_args($frame['args']) : '';
+        $line = "#$key $file($line): $function($args)";
         $out[] = "#$key $file($line): $function($args)";
     }
 

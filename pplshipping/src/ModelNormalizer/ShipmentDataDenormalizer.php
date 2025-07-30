@@ -189,7 +189,7 @@ class ShipmentDataDenormalizer  implements DenormalizerInterface
         $shipmentModel->setOrderId($data->id);
 
 
-        if (@$data->note)
+        if (isset($data->note) && $data->note)
             $shipmentModel->setNote($data->note);
 
         $dm = date("ymd");
