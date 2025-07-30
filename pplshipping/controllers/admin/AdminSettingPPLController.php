@@ -242,13 +242,10 @@ class AdminSettingPPLController extends AdminPPLController
         if ($token !== $this->getToken()) {
             return $this->send403();
         }
-        //getCarriers($id_lang, $active = false, $delete = false, $id_zone = false, $ids_group = null, $modules_filters = self::PS_CARRIERS_ONLY)
+
         $carriers = [];
-        foreach (\Carrier::getCarriers(0, true, false, null, null, \Carrier::ALL_CARRIERS) as $carrier) {
+        foreach (\Carrier::getCarriers(0, false, false, null, null, \Carrier::ALL_CARRIERS) as $carrier) {
             $carrier  = new \Carrier($carrier['id_carrier']);
-            if ($carrier->external_module_name && $carrier->external_module_name !== "pplshipping") {
-                continue;
-            }
             $model = pplcz_denormalize($carrier, \PPLShipping\Model\Model\PrestaCarrierModel::class);
             $model = pplcz_normalize($model);
             $carriers[] = $model;

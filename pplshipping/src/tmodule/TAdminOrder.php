@@ -192,14 +192,22 @@ trait TAdminOrder {
 
     public function hookDisplayAdminGridTableBefore($params)
     {
-        if (@$params['grid']['id'] === 'order')
+        if (isset($params['grid']['id']) && $params['grid']['id'] === 'order')
         {
             /**
              * @var \pplshipping $this
              */
-           $this->smarty->assign([
+            if (isset($params['grid']['filters']['ppl_filter']))
+            {
+                $this->smarty->assign([
                     "ppl_filter_state" =>@$params['grid']['filters']['ppl_filter'] === "1"
-            ]);
+                ]);
+            } else {
+                $this->smarty->assign([
+                    "ppl_filter_state" => false
+                ]);
+            }
+
             return $this->display($this->getReflFile(), "views/templates/admin/order_table_top.tpl");
         }
         return "";

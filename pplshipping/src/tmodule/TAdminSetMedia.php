@@ -14,7 +14,7 @@ trait TAdminSetMedia
 
     public function hookActionAdminControllerSetMedia($params)
     {
-        $assetGeneratedName = "-1.0.3";
+        $assetGeneratedName = "-1.0.4";
 
         /**
          * @var \pplshipping $this
@@ -36,7 +36,12 @@ trait TAdminSetMedia
         if (!$router && $router !== false)
         {
             try {
-                $router = \Context::getContext()->controller->get("router");
+                $controller = \Context::getContext()->controller;
+                if (method_exists($controller, 'get'))
+                    $router = $controller->get("router");
+                else if (method_exists($controller, 'getContainer'))
+                    $router = $controller->getContainer()->get("router");
+
             } catch (ServiceNotFoundException $ex)
             {
                 $router = false;

@@ -30,11 +30,10 @@ class CartModelDenormalizer implements DenormalizerInterface
         $shipmentCartModel->setParcelBoxEnabled(true);
         $shipmentCartModel->setAlzaBoxEnabled(true);
 
-        $carrier = @$context['carrier'];
-        if (!$carrier)
-        {
+        if (!isset($context['carrier']))
             $carrier = new \Carrier($data->id_carrier);
-        }
+        else
+            $carrier = $context['carrier'];
 
         $code = \Configuration::getGlobalValue("PPLCarrier{$carrier->id_reference}");
 
@@ -82,7 +81,7 @@ class CartModelDenormalizer implements DenormalizerInterface
         static $inNormalizer;
         if (!$inNormalizer) {
             $inNormalizer = true;
-            $max = $data->getOrderTotal();
+            $max = $data->getOrderTotal(true, \Cart::BOTH_WITHOUT_SHIPPING );
             $inNormalizer = false;
         }
 
