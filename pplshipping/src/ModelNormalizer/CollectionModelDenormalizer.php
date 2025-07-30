@@ -39,7 +39,8 @@ class CollectionModelDenormalizer implements DenormalizerInterface
         }
         else if ($data instanceof NewCollectionModel && $type == \PPLCollection::class)
         {
-            $collection = @$context["data"] ?: new \PPLCollection();
+
+            $collection = isset($context["data"]) ? $context['data'] : new \PPLCollection();
 
             $collection->state = "BeforeSend";
             $collection->send_date = $data->getSendDate();

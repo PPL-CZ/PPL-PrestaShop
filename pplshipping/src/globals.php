@@ -207,7 +207,7 @@ function pplcz_get_map_args() {
     if (intval($withCash))
         $data["data-initialfilters"][] = "ParcelShop";
 
-    if (!@$data["data-initialfilters"]) {
+    if (isset($data['data-initialfilters']) && !$data["data-initialfilters"]) {
         unset($data["data-initialfilters"]);
     } else {
         $data["data-initialfilters"] = join(',', $data["data-initialfilters"]);
@@ -217,7 +217,7 @@ function pplcz_get_map_args() {
     if ($countries)
         $data['data-countries'] = strtolower($countries);
 
-    if (@$data["data-lat"]) {
+    if (isset($data['data-lat']) && $data["data-lat"]) {
         $data["data-mode"] = "static";
     }
 

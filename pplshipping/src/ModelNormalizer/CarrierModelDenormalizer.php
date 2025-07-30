@@ -15,8 +15,10 @@ class CarrierModelDenormalizer  implements DenormalizerInterface
             $carrier = new PrestaCarrierModel();
             $carrier->setId($data->id_reference);
             $carrier->setName($data->name);
+            $carrier->setModule($data->external_module_name);
             $code = \Configuration::getGlobalValue("PPLCarrier{$data->id_reference}") ?: null;
             $carrier->setService($code);
+            $carrier->setActive($data->active);
             $sql = 'SELECT id_shop FROM ' . _DB_PREFIX_ . 'carrier_shop WHERE id_carrier = ' . ((int)$data->id);
             $lists = \Db::getInstance()->executeS($sql);
             $shops = [];
