@@ -54,6 +54,7 @@ use WoocommercePpl\Data\ShipmentData;
 use PPLShipping\Model\Model\LabelPrintModel;
 use PPLShipping\Model\Model\WhisperAddressModel;
 use PPLShipping\Serializer;
+use PPLShipping\Setting\ApiSetting;
 
 
 class CPLOperation
@@ -129,15 +130,17 @@ class CPLOperation
             list($a, $b, $c) = explode(".", $content);
             if ($b) {
                 $b = json_decode(base64_decode($b), true);
-                if ($b["exp"] > time() - 20) {
+                if ($b["exp"] > time() - 40) {
                     return $content;
                 }
             }
         }
-        $client_secret = \Configuration::getGlobalValue("PPLClientSecret");
-        $client_id = \Configuration::getGlobalValue("PPLClientId");
+        $myapi = ApiSetting::getApi();
+        $client_secret = $myapi->getClientSecret();
+        $client_id = $myapi->getClientId();
 
-        if (!$client_secret || !$client_secret)
+
+        if (strlen($client_secret) < 5 || strlen($client_secret) < 5)
             return null;
 
         $auth = "Basic " . base64_encode("$client_id:$client_secret");
@@ -220,18 +223,23 @@ class CPLOperation
 
     /**
      * @param int[] $shipments
-     * @return void
+
      * @throws ApiException
      *
      * Vytvoření zásilek
      */
-    public function createPackages($shipments = [])
+    public function createPackages($batchId, $print = null)
     {
 
-        $shipments = array_map(function ($item)
+        $batchdata = new \PPLBatch($batchId);
+        $batchdata->lock = true;
+        $batchdata->save();
+
+        $shipments = \PPLShipment::findShipmentsByLocalBatchId($batchdata->id);
+        $shipments = array_map(function (\PPLShipment  $shipment)
         {
-            $shipment = new \PPLShipment($item);
             $shipment->lock();
+            $shipment->save();
             return $shipment;
         }, $shipments);
 
@@ -249,6 +257,9 @@ class CPLOperation
             $location = explode("/", $location);
             $batch_id = end($location);
 
+            $batchdata->remote_batch_id = $batch_id;
+            $batchdata->save();
+
             foreach ($shipments as $shipment) {
                 $shipment->import_state = "InProgress";
                 $shipment->batch_id = $batch_id;
@@ -259,8 +270,10 @@ class CPLOperation
             return $batch_id;
         }
         catch (\Exception $ex) {
-
+            $batchdata->lock = false;
+            $batchdata->save();
             foreach ($shipments as $position => $shipment) {
+
                 $shipment->unlock();
                 if ($ex instanceof  ApiException && $ex->getResponseObject() instanceof  EpsApiInfrastructureWebApiModelProblemJsonModel) {
                     /**
@@ -314,6 +327,7 @@ class CPLOperation
         $shipmentNumber = $package->shipment_number;
         $shipmentApi->shipmentShipmentNumberCancelPost($shipmentNumber);
         $package->phase = "Canceled";
+        $package->phase_label = "Canceled";
         $package->lock = true;
         $package->save();
     }
@@ -358,7 +372,7 @@ class CPLOperation
         }
 
         if (!$referenceId) {
-            $httpData = $shipmentApi->getShipmentBatchLabelWithHttpInfo($batchId, 100, 0, $format, $position);
+            $httpData = $shipmentApi->getShipmentBatchLabelWithHttpInfo($batchId, 100, 0, $format, $position, null, null, null, "ReferenceId");
             if (!$httpData) {
                 return;
             }
@@ -373,7 +387,7 @@ class CPLOperation
         }
         else {
             // načtu si info kolem batch
-            $data = $shipmentApi->getShipmentBatch($batchId);
+            $data = $shipmentApi->getShipmentBatch($batchId, null, null, null, 'ReferenceId');
             $items = $data->getItems();
             usort($items, function (EpsApiMyApi2WebModelsShipmentBatchShipmentResultItemModel $first, EpsApiMyApi2WebModelsShipmentBatchShipmentResultItemModel $second) {
                 return strcmp($first->getReferenceId(), $second->getReferenceId());
@@ -420,7 +434,7 @@ class CPLOperation
             $max = $shipmentNumber ? 1: (count($items) + 1);
 
 
-            $httpData = $shipmentApi->getShipmentBatchLabelWithHttpInfo($batchId, $max, $offset, $format, $position, null, null, null, "ReferenceId,ShipmentNumber");
+            $httpData = $shipmentApi->getShipmentBatchLabelWithHttpInfo($batchId, $max, $offset, $format, $position, null, null, null, "ReferenceId");
             if (!$httpData) {
                 return;
             }
@@ -455,7 +469,7 @@ class CPLOperation
             $batchData = $shipmentBatchApi->getShipmentBatchWithHttpInfo($item);
 
             $batchData = $batchData[0];
-            $shipments = \PPLShipment::findBatchShipments($item);
+            $shipments = \PPLShipment::findRemoteBatchShipments($item);
 
 
             foreach ($batchData->getItems() as $batchItem) {
@@ -557,7 +571,7 @@ class CPLOperation
         $ev = new EpsApiMyApi2WebModelsOrderEventCancelOrderEventModel();
         $ev->setNote("Zrušeno na vyžádání");
         try {
-            $remoteId = $collection->remote_collection_id;
+            $remoteId = $collection->reference_id;
             $order->orderCancelPost(null, $remoteId, null, null, null, $ev);
             $collection->state = "Canceled";
             $collection->save();

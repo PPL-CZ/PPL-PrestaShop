@@ -82,7 +82,6 @@ class AdminShipmentPPLController extends AdminPPLController
         $shipment->import_errors = null;
         $shipment->save();
         return new Response("", 204);
-        die();
     }
 
     public function UpdateRecipientAddress($id, Request $request)

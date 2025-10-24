@@ -209,7 +209,13 @@
                         type="button"
                         data-orderId="{$orderId}"
                         {if ($shipment->getId())}data-shipmentId="{$shipment->getId()}"{/if}
-                        data-shipment="{$shipment|ppljser|escape}">Tisk etiket
+                        data-shipment="{$shipment|ppljser|escape}">Tisk etiket{if $shipment->getBatchId()} (#{$shipment->getBatchId()}){/if}
+                </button>
+                <button class="button btn btn-sm  btn-primary create-labels-add"
+                        type="button"
+                        data-orderId="{$orderId}"
+                        {if ($shipment->getId())}data-shipmentId="{$shipment->getId()}"{/if}
+                        data-shipment="{$shipment|ppljser|escape}">Přidat k tisku
                 </button>
             {/if}
             {if $shipment->getId() and in_array($shipment->getImportState(), [ "Error","None",""], true)}
@@ -218,6 +224,11 @@
                         data-orderId="{$orderId}"
                         data-shipmentId="{$shipment->getId()}">Odstranit
                 </button>
+            {/if}
+            {if $batchs[$key]}
+                <a href="{$batchs[$key]}" class="button btn btn-sm  btn-primary"
+                        type="button">Tisková davka
+                </a>
             {/if}
             {if ($key !== $shipments|pplarray_key_last)}
                 <hr style="margin-left: -12px; margin-right:-12px"/>

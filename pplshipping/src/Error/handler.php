@@ -119,5 +119,5 @@ function pplcz_shutdown_handler()
     }
 
 }
-set_error_handler("pplcz_error_handler");
+
 register_shutdown_function("pplcz_shutdown_handler");

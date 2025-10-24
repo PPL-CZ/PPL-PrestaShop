@@ -32,6 +32,8 @@ class PPLShipment extends ObjectModel {
 
     public $batch_id;
 
+    public $id_batch_local;
+
     public $batch_label_group;
 
     public $note;
@@ -65,6 +67,7 @@ class PPLShipment extends ObjectModel {
             'has_parcel'=> ['type'=>self::TYPE_BOOL, 'allow_null' => true],
             'id_parcel'=>['type'=>self::TYPE_INT, 'allow_null' => true],
             'batch_id' =>['type'=>self::TYPE_STRING, 'allow_null' => true],
+            "id_batch_local" =>['type'=>self::TYPE_STRING, 'allow_null' => true],
             'note' => ['type'=>self::TYPE_STRING, 'allow_null' => true],
             'age'=>['type'=>self::TYPE_STRING, 'allow_null' => true],
             'lock'=>['type'=>self::TYPE_BOOL],
@@ -159,12 +162,57 @@ class PPLShipment extends ObjectModel {
      * @return \PPLShipment[]
      * @throws PrestaShopDatabaseException
      */
-    public static function findBatchShipments($batch_id)
+    public static function findRemoteBatchShipments($batch_id)
     {
         $prefix = _DB_PREFIX_;
         $output = [];
         $db = \Db::getInstance();
-        $query = "select * from {$prefix}ppl_shipment where batch_id = '" . $db->escape($batch_id) . "'";
+        $query = "select * from {$prefix}ppl_shipment where batch_id = '" . $db->escape($batch_id) . "' order by reference_id";
+        $result = $db->query($query);
+        while ($raworder =  $db->nextRow($result))
+        {
+            $order = new static();
+            $order->hydrate($raworder);
+            $output[] = $order;
+        }
+        return $output;
+    }
+
+    public static function reorderBatchShipment($local_batch_id, $shipments)
+    {
+        $batchShipments = static::findShipmentsByLocalBatchId($local_batch_id);
+
+        $batchShipments = array_map(function($item){
+            return $item->id;
+        }, $batchShipments);
+
+        if (array_diff($batchShipments, $shipments) || array_diff($shipments, $batchShipments)) {
+            throw new \Exception("Invalid count shipments");
+        }
+
+        foreach ($shipments as $key => $shipmentId)
+        {
+            $shipments[$key] = new PPLShipment($shipmentId);
+        }
+
+        $pad = 5;
+        $position = 1;
+
+        foreach ($shipments as $shipment)
+        {
+            $ref = str_pad($position, $pad,"0", STR_PAD_LEFT ) . '#' . $shipment->id_order;
+            $shipment->reference_id = $ref;
+            $shipment->update();
+            $position++;
+        }
+    }
+
+    public static function findShipmentsByLocalBatchId($batch_id)
+    {
+        $prefix = _DB_PREFIX_;
+        $output = [];
+        $db = \Db::getInstance();
+        $query = "select * from {$prefix}ppl_shipment where id_batch_local = '" . $db->escape($batch_id) . "' order by reference_id";
         $result = $db->query($query);
         while ($raworder =  $db->nextRow($result))
         {

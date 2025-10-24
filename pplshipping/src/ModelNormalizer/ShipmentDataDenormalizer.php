@@ -111,8 +111,12 @@ class ShipmentDataDenormalizer  implements DenormalizerInterface
         if ($data->batch_label_group)
             $shipmentModel->setBatchLabelGroup($data->batch_label_group);
 
+        if ($data->id_batch_local)
+            $shipmentModel->setBatchId($data->id_batch_local);
+
+
         if ($data->batch_id)
-            $shipmentModel->setBatchId($data->batch_id);
+            $shipmentModel->setBatchRemoteId($data->batch_id);
 
         if($data->cod_value)
             $shipmentModel->setCodValue($data->cod_value);
@@ -218,6 +222,7 @@ class ShipmentDataDenormalizer  implements DenormalizerInterface
            $shipmentModel->setSender(Serializer::getInstance()->denormalize($adresses[0], SenderAddressModel::class));
         }
         $shipmentModel->setRecipient(Serializer::getInstance()->denormalize($data, RecipientAddressModel::class));
+
 
 
 

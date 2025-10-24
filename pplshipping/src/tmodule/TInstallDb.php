@@ -146,6 +146,15 @@ CREATE TABLE IF NOT EXISTS `{$prefix}ppl_base_disabled_rule` (
   UNIQUE KEY `id_product` (`id_product`),
   UNIQUE KEY `id_category` (`id_category`)
 ) ENGINE=$engine DEFAULT CHARSET=utf8mb4;
+---split---
+CREATE TABLE IF NOT EXISTS `{$prefix}ppl_batch` (
+  `id_ppl_batch` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) COLLATE utf8mb3_bin DEFAULT NULL,
+  `remote_batch_id` varchar(50) COLLATE utf8mb3_bin DEFAULT NULL,
+  `lock` int(11) NOT NULL,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`id_ppl_batch`)
+) ENGINE=$engine DEFAULT CHARSET=utf8mb4;
 MULTILINE;
 
         $success = true;
@@ -165,6 +174,29 @@ MULTILINE;
         {
             Db::getInstance()->execute("ALTER TABLE `{$prefix}ppl_shipment` ADD COLUMN `print_state` varchar(20) NULL ;");
         }
+
+        $sql = "SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = '" . pSQL( "{$prefix}ppl_shipment") . "' 
+        AND TABLE_SCHEMA = '" . _DB_NAME_ . "' 
+        AND COLUMN_NAME = '" . pSQL( "id_batch_local") . "'";
+
+        $result = Db::getInstance()->getValue($sql);
+        if (!$result)
+        {
+            Db::getInstance()->execute("ALTER TABLE `{$prefix}ppl_shipment` ADD COLUMN `id_batch_local` int(11) NULL ;");
+        }
+
+        $sql = "SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = '" . pSQL( "{$prefix}ppl_shipment")  . "' ".
+               " AND TABLE_NAME = '" . pSQL("{$prefix}ppl_shipment") . "' AND INDEX_NAME = '" . pSQL("reference_id") . "'";
+        
+        $result = Db::getInstance()->getValue($sql);
+
+        if ($result)
+        {
+            Db::getInstance()->execute("ALTER TABLE `{$prefix}ppl_shipment` DROP INDEX `reference_id`;");
+        }
+
 
         return $success;
     }

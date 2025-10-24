@@ -1,6 +1,5 @@
 jQuery(document).on("click", ".ppl_print_labels", function (ev){
 
-
     var div = jQuery("<div>").appendTo("body");
     var shipments = [];
 
@@ -14,6 +13,19 @@ jQuery(document).on("click", ".ppl_print_labels", function (ev){
     })
 
     window.pplPlugin = window.pplPlugin  || [];
+    const items = shipments.map(x => ({shipmentId: x.shipment.id, orderId: x.shipment.orderId}));
+    window.pplPlugin.push(["selectBatch", div[0], {
+        "hideOrderAnchor": false,
+        "items": { items },
+        "returnFunc": function(data) {
+            unmount = data.unmount;
+        },
+        "onClose": function(){
+            unmount();
+            div.remove();
+        }
+    }]);
+    /*
 
     pplPlugin.push(["newLabels", div[0], {
         shipments,
@@ -35,8 +47,9 @@ jQuery(document).on("click", ".ppl_print_labels", function (ev){
                 })
             })
 
-            */
+
         }
     }])
+*/
     ev.preventDefault();
 });

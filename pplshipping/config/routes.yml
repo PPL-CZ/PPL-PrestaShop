@@ -203,8 +203,8 @@ pplshipping_shipment_update_shipment_refresh_states:
     id: \d+
 
 pplshipping_shipment_update_shipment_cancel_package:
-  path: /admin/pplshipping/shipment/{id}/cancelPackage/{packageId}
-  methods: [PUT]
+  path: /admin/pplshipping/shipment/{id}/cancel/{packageId}
+  methods: [DELETE]
   defaults:
     _controller: AdminShipmentPPLController::ShipmentCancelPackage
   requirements:
@@ -270,35 +270,6 @@ pplshipping_order_redirect:
 
 
 
-
-pplshipping_shipmentbatch_replacement:
-  path: /admin/pplshipping/shipmentBatch/replacementPath
-  methods: [GET]
-
-pplshipping_shipmentbatch_prepare_labels:
-  path: /admin/pplshipping/shipmentBatch/prepare
-  methods: [POST]
-  defaults:
-    _controller: AdminShipmentBatchPPLController::PrepareLabels
-
-pplshipping_shipmentbatch_create_labels:
-  path: /admin/pplshipping/shipmentBatch/createLabels
-  methods: [POST]
-  defaults:
-    _controller: AdminShipmentBatchPPLController::CreateLabels
-
-pplshipping_shipmentbatch_refresh_labels:
-  path: /admin/pplshipping/shipmentBatch/{id}/refreshLabels
-  methods: [PUT]
-  defaults:
-    _controller: AdminShipmentBatchPPLController::RefreshLabels
-
-pplshipping_shipmentbatch_download:
-  path: /admin/pplshipping/shipmentBatch/{batchId}/download
-  methods: [GET]
-  defaults:
-    _controller: AdminFilePPLController::Download
-
 pplshipping_collection_replacement:
   path: /admin/pplshipping/collection/replacementPath
   methods: [GET]
@@ -356,3 +327,72 @@ pplshipping_log_send_logs:
   methods: [ POST ]
   defaults:
     _controller: AdminLogPPLController::SendLogs
+
+
+
+pplshipping_batch_replacement:
+  path: /admin/pplshipping/batch/replacementPath
+  methods: [GET]
+
+pplshipping_batch_prepare_labels:
+  path: /admin/pplshipping/batch/{id}/preparing
+  methods: [POST]
+  defaults:
+    _controller: AdminShipmentBatchPPLController::PrepareLabels
+
+pplshipping_batch_create_labels:
+  path: /admin/pplshipping/batch/{id}/create-labels
+  methods: [POST]
+  defaults:
+    _controller: AdminShipmentBatchPPLController::CreateLabels
+
+pplshipping_batch_refresh_labels:
+  path: /admin/pplshipping/batch/{id}/refresh-labels
+  methods: [PUT, POST]
+  defaults:
+    _controller: AdminShipmentBatchPPLController::RefreshLabels
+
+pplshipping_batch_download:
+  path: /admin/pplshipping/batch/{batchRemoteId}/download
+  methods: [GET]
+  defaults:
+    _controller: AdminFilePPLController::Download
+
+
+pplshipping_batch_get_batches:
+  path: /admin/pplshipping/batch
+  methods: [ GET ]
+  defaults:
+    _controller: AdminShipmentBatchPPLController::GetBatches
+
+pplshipping_batch_get_shipment:
+  path: /admin/pplshipping/batch/{batchId}/shipment
+  methods: [ GET ]
+  defaults:
+    _controller: AdminShipmentBatchPPLController::GetBatchShipments
+
+pplshipping_batch_add_shipment:
+  path: /admin/pplshipping/batch/{batchId}/shipment
+  methods: [  PUT, POST  ]
+  defaults:
+    _controller: AdminShipmentBatchPPLController::AddBatchShipment
+
+
+pplshipping_batch_remove_shipment:
+  path: /admin/pplshipping/batch/{batchId}/shipment/{shipmentId}
+  methods: [ DELETE ]
+  defaults:
+    _controller: AdminShipmentBatchPPLController::RemoveBatchShipment
+
+pplshipping_batch_reorder:
+  path: /admin/pplshipping/batch/{batchId}/reorder
+  methods: [ PUT, POST ]
+  defaults:
+    _controller: AdminShipmentBatchPPLController::ReorderBatchShipment
+
+
+pplshipping_batch_create:
+  path: /admin/pplshipping/batch
+  methods: [ POST ]
+  defaults:
+    _controller: AdminShipmentBatchPPLController::CreateBatch

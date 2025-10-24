@@ -104,14 +104,15 @@ function smarty_pplfileurl($item, $package=null)
 {
     if ($item instanceof \PPLShipping\Model\Model\ShipmentModel)
     {
-        $batchId = $item->getBatchId();
+        $batchId = $item->getBatchRemoteId();
         $params =  [
-            "batchId"=>$batchId,
+            "batchRemoteId"=>$batchId,
             "shipmentId" => $item->getId(),
         ];
 
         if ($package instanceof  \PPLShipping\Model\Model\PackageModel)
             $params['packageId'] = $package->getId();
+
         if ($item->getPrintState())
         {
             $params['print'] = $item->getPrintState();
@@ -121,12 +122,17 @@ function smarty_pplfileurl($item, $package=null)
             $context = \Context::getContext();
             $controller = $context->controller;
             $router = $controller->get("router");
-            return $router->generate("pplshipping_shipmentbatch_download", $params);
+            return $router->generate("pplshipping_batch_download", $params);
         } catch (\Throwable $ex) {
-            $url = "/admin/pplshipping/shipmentBatch/{$params['batchId']}/download";
-            unset($params['batchId']);
+            $url = "/admin/pplshipping/batch/{$params['batchRemoteId']}/download";
+            unset($params['batchRemoteId']);
             if (!$params['shipmentId'])
                 unset($params['shipmentId']);
+            else
+                $params['shipmentId'] = "{$params['shipmentId']}";
+            if (isset($params['packageId']))
+                $params['packageId'] = "{$params['packageId']}";
+
             return \Context::getContext()->link->getAdminLink("AdminConfigurationPPL", true, [], ['pplpath' => $url] + $params);
         }
     }

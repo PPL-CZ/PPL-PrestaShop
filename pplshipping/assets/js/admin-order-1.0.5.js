@@ -55,7 +55,7 @@ function adminOrder (orderId) {
             e.preventDefault();
             disable();
             const data = get_data(this);
-            run(makeUrl("shipment", `/${data.shipmentId}/cancelPackage/${data.packageId}`), "PUT");
+            run(makeUrl("shipment", `/${data.shipmentId}/cancel/${data.packageId}`), "DELETE");
         })
 
         jQuery(this).find(".ppl_available_print_setting").on("click", function (e)
@@ -167,6 +167,28 @@ function adminOrder (orderId) {
                     unmount = data.unmount;
                 },
                 "onFinish": function(){
+                    refresh().then(() => {
+                        unmount();
+                    })
+                }
+            }]);
+        });
+
+        jQuery(this).find(".create-labels-add").on("click", function (e) {
+            disable();
+            const data = get_data(this);
+
+            const pplPlugin = window.pplPlugin = window.pplPlugin || [];
+            let unmount = null;
+            const item = jQuery("<div>").prependTo("body")[0];
+
+            pplPlugin.push(["selectBatch", item, {
+                "hideOrderAnchor": false,
+                "items": { items: [{ shipmentId: data.shipmentId, orderId: data.orderId }]},
+                "returnFunc": function(data) {
+                    unmount = data.unmount;
+                },
+                "onClose": function(){
                     refresh().then(() => {
                         unmount();
                     })

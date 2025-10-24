@@ -42,9 +42,6 @@ class CartModelDenormalizer implements DenormalizerInterface
            $shipmentCartModel->setMapEnabled(pplcz_parcel_required($code));
         }
 
-
-
-
         $codCountries = pplcz_get_cod_currencies();
         $addressId = $data->id_address_delivery;
         $address = new \Address($addressId);
@@ -55,7 +52,6 @@ class CartModelDenormalizer implements DenormalizerInterface
             $country = new \Country($idCountry);
             $countryCode = $country->iso_code;
         }
-
 
         $zones = $carrier->getZones();
         $iso_codes = [];

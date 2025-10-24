@@ -433,7 +433,18 @@ trait TAdminOrder {
 
         foreach ($orders as $key => $value)
         {
+
             $orders[$key] = pplcz_denormalize($value, ShipmentModel::class);
+            $batchs[$key] = false;
+            if ($orders[$key]->getBatchId())
+            {
+                $link =  \Context::getContext()->link;
+                $printurl = $link->getAdminLink("AdminConfigurationPPL", true, [] ,[
+                    "token" => \Tools::getAdminToken("AdminConfigurationPPL"),
+
+                ]) . "#/batch/" . $orders[$key]->getBatchId();;
+                $batchs[$key] = $printurl;
+            }
             $tests = new Errors();
             Validator::getInstance()->validate($orders[$key], $tests, "");
             $errors[$key] = $tests->errors;
@@ -455,7 +466,8 @@ trait TAdminOrder {
             "shipments" => $orders,
             "availablePrinters" => (new CPLOperation())->getAvailableLabelPrinters(),
             "selectedPrint" => $selectedPrint,
-            "newShipment" => $newShipment
+            "newShipment" => $newShipment,
+            "batchs" => $batchs
 
         ]);
 

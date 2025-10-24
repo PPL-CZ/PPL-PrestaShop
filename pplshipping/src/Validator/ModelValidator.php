@@ -56,7 +56,8 @@ abstract class ModelValidator {
         CollectionValidator::class,
         CodValidator::class,
         InsuranceValidator::class,
-        ParcelValidator::class
+        ParcelValidator::class,
+        ApiValidator::class
 
     ];
 

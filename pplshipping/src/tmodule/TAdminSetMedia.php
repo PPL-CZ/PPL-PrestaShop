@@ -14,7 +14,7 @@ trait TAdminSetMedia
 
     public function hookActionAdminControllerSetMedia($params)
     {
-        $assetGeneratedName = "-1.0.4";
+        $assetGeneratedName = "-1.0.5";
 
         /**
          * @var \pplshipping $this
@@ -80,10 +80,20 @@ trait TAdminSetMedia
         $api['setting'] = $this->getTMediaSetMediaPathForGenerate("pplshipping_setting_replacement");
         $api['codelist'] = $this->getTMediaSetMediaPathForGenerate("pplshipping_codelist_replacement");
         $api['shipment'] = $this->getTMediaSetMediaPathForGenerate("pplshipping_shipment_replacement");
-        $api['shipmentBatch'] = $this->getTMediaSetMediaPathForGenerate("pplshipping_shipmentbatch_replacement");
+        $api['batch'] = $this->getTMediaSetMediaPathForGenerate("pplshipping_batch_replacement");
         $api['order'] = $this->getTMediaSetMediaPathForGenerate("pplshipping_order_replacement");
         $api['collection'] = $this->getTMediaSetMediaPathForGenerate("pplshipping_collection_replacement");
         $api['log'] = $this->getTMediaSetMediaPathForGenerate("pplshipping_log_replacement");
+
+        $link =  \Context::getContext()->link;
+
+        $api['ppl'] = $link->getAdminLink("AdminConfigurationPPL", true, [] ,[
+                "_token" => \Tools::getAdminToken("AdminConfigurationPPL")
+        ]);
+        $api['sellorder'] = \Context::getContext()->link->getAdminLink('AdminOrders', true, [], [
+                'id_order' => '8210',
+                'vieworder' => 1
+        ]);
 
         $url = $this->context->link->getModuleLink('pplshipping', 'FrontMapPPL');
         $secure_key = \Configuration::getGlobalValue("PPLShipmentCronKey");

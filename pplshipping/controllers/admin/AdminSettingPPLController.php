@@ -42,9 +42,12 @@ class AdminSettingPPLController extends AdminPPLController
          */
         $myApi = pplcz_denormalize($json, \PPLShipping\Model\Model\MyApi2::class);
 
+        $error = pplcz_validate($myApi);
+        if ($error->errors)
+            return $this->send400($error);
+
         try {
-            Configuration::updateGlobalValue("PPLClientSecret", $myApi->getClientSecret());
-            Configuration::updateGlobalValue("PPLClientId", $myApi->getClientId());
+            \PPLShipping\Setting\ApiSetting::setApi($myApi);
             $cpl = new \PPLShipping\CPLOperation();
             $cpl->clearAccessToken();
             $accessToken = $cpl->getAccessToken();
@@ -160,8 +163,15 @@ class AdminSettingPPLController extends AdminPPLController
         $content = $this->getJson($request);
         if (is_array($content))
         {
-            if (!@$content['shipmentId'])
-                $content = $content['value'];
+            if (!isset($content['shipmentId']) || !$content['shipmentId']) {
+                foreach (['format', 'value', 'printState'] as $key)
+                {
+                    if (isset($content[$key])) {
+                        $content = $content[$key];
+                        break;
+                    }
+                }
+            }
         }
 
 

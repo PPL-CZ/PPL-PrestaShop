@@ -160,7 +160,7 @@ function pplcz_normalize($data, ?string $format = null, array $context = [])
     return \PPLShipping\Serializer::getInstance()->normalize( $data, $format, $context);
 }
 
-function pplcz_validate($data, $path, ?\PPLShipping\Errors $errors = null) {
+function pplcz_validate($data, $path = "", ?\PPLShipping\Errors $errors = null) {
     $errors = $errors ?: new \PPLShipping\Errors();
     \PPLShipping\Validator::getInstance()->validate($data, $errors, $path);
     return $errors;
@@ -244,6 +244,7 @@ spl_autoload_register(function ($class) {
         case "PPLParcel":
         case "PPLOrder":
         case "PPLShipment":
+        case "PPLBatch":
         case "PPLLog":
         case "PPLBaseDisabledRule":
             require_once  __DIR__ . '/../classes/' . $class. '.php';

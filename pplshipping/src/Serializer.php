@@ -16,6 +16,7 @@ use PPLShipping\Model\Normalizer\CurrencyModelNormalizer;
 use PPLShipping\Model\Normalizer\JaneObjectNormalizer;
 use PPLShipping\Model\Normalizer\ShipmentCartModelNormalizer;
 use PPLShipping\ModelNormalizer\AddressModelDenormalizer;
+use PPLShipping\ModelNormalizer\BatchModelDenormalizer;
 use PPLShipping\ModelNormalizer\CarrierModelDenormalizer;
 use PPLShipping\ModelNormalizer\CartModelDenormalizer;
 use PPLShipping\ModelNormalizer\ErrorLogModelDenormalizer;
@@ -25,7 +26,9 @@ use PPLShipping\ModelNormalizer\CollectionModelDenormalizer;
 use PPLShipping\ModelNormalizer\PackageModelDenormalizer;
 use PPLShipping\ModelNormalizer\ParcelAddressModelDenormalizer;
 use PPLShipping\ModelNormalizer\ShipmentDataDenormalizer;
+use PPLShipping\ModelNormalizer\ShipmentWithAdditionalModelDenormalizer;
 use PPLShipping\ModelNormalizer\ShopModelDenormalizer;
+use PPLShipping\ModelNormalizer\WpErrorModelDenormalizer;
 
 class Serializer extends Symfony\Component\Serializer\Serializer
 {
@@ -48,6 +51,10 @@ class Serializer extends Symfony\Component\Serializer\Serializer
             new CPLBatchAddressDenormalizer(),
             new CPLBatchCreateShipmentsDenormalizer(),
             new CPLBatchShipmentDenormalizer(),
+
+            new ShipmentWithAdditionalModelDenormalizer(),
+            new WpErrorModelDenormalizer(),
+            new BatchModelDenormalizer(),
 
             new JaneObjectNormalizer(),
 

@@ -4,7 +4,7 @@ use Symfony\Component\HttpFoundation\Request;
 
 class AdminFilePPLController extends  AdminPPLController
 {
-    public function Download($batchId, Request $request)
+    public function Download($batchRemoteId, Request $request)
     {
         if ($this->getToken() !== $request->query->get("_token"))
             return $this->send403();
@@ -14,7 +14,7 @@ class AdminFilePPLController extends  AdminPPLController
         $packageNumber = null;
         $printFormat = strip_tags($request->query->get("print")) ?: \Configuration::getGlobalValue("PPLPrintSetting");
 
-        $shipments= \PPLShipment::findBatchShipments($batchId);
+        $shipments= \PPLShipment::findRemoteBatchShipments($batchRemoteId);
         if ($printFormat)
             foreach ($shipments as $shipment)
             {
@@ -42,7 +42,7 @@ class AdminFilePPLController extends  AdminPPLController
             }
         }
 
-        $cpl->getLabelContents($batchId, $packageReference, $packageNumber, $printFormat);
+        $cpl->getLabelContents($batchRemoteId, $packageReference, $packageNumber, $printFormat);
         exit;
     }
 

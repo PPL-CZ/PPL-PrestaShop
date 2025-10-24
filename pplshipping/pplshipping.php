@@ -18,7 +18,7 @@ class pplshipping extends CarrierModule {
     {
         $this->name = 'pplshipping';
         $this->tab = 'shipping_logistics';
-        $this->version = '1.0.4';
+        $this->version = '1.0.5';
         $this->author = 'PPL';
         $this->need_instance = 1;
         parent::__construct();
@@ -121,7 +121,14 @@ class pplshipping extends CarrierModule {
             apcu_clear_cache();
         }
         $prefix = _DB_PREFIX_;
-        \Db::getInstance()->execute("TRUNCATE `{$prefix}ppl_log`");
+
+        try {
+            \Db::getInstance()->execute("TRUNCATE `{$prefix}ppl_log`");
+        }
+        catch (\Exception $ex)
+        {
+
+        }
     }
 
     public function enable($force = false)
