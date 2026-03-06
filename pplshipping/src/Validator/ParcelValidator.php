@@ -1,10 +1,9 @@
 <?php
 namespace PPLShipping\Validator;
 
-
-
 use PPLShipping\Model\Model\ShipmentModel;
 use PPLShipping\Model\Model\UpdateShipmentModel;
+use PPLShipping\Setting\MethodSetting;
 
 class ParcelValidator extends ModelValidator
 {
@@ -16,68 +15,67 @@ class ParcelValidator extends ModelValidator
 
     public function validate($model, $errors, $path)
     {
+
         $code = $this->getValue($model, 'serviceCode');
+
+        $method = MethodSetting::getMethod($code);
         /**
          * @var ShipmentModel|UpdateShipmentModel $model
          */
-
-        if ($model->isInitialized("age")
-            && $model->getAge()
-            && in_array($code, ["SMEU", "SMED", "CONN", "COND"])) {
-            $errors->add("$path.age", "Mimo ČR nelze dělat kontrolu věku");
-        }
-        else if ($model->isInitialized("age") && $model->getAge()
-            && $model->isInitialized("hasParcel") && $model->getHasParcel()) {
-            if ($model->isInitialized("parcel") && $model->getParcel()) {
-                $parcel = $model->getParcel();
-                if ($parcel->getType() !== "ParcelShop") {
-                    $errors->add("$path.hasParcel", "Výdejní misto může být pouze obchod kvůli kontrole věku");
-                }
-            }
-        }
+        if (!$code || !$method)
+            return;
 
         $parcelid = $this->getValue($model, "parcelId") ?: $this->getValue($model, "parcel.id");
-        $code = $this->getValue($model, 'serviceCode');
-
-        if (in_array($code, ["SMAD", "SMAR"])) {
-            if ($parcelid) {
-                $parcelData = new \PPLParcel($parcelid);
-                if ($parcelData->country !== "CZ") {
-                    $errors->add("$path.hasParcel", "Pro službu lze vybrat pouze české výdejní místo");
-                }
-            }
-        } else if (in_array($code, ["SMEU", "SMED"])) {
-            if ($parcelid) {
-                $parcelData = new \PPLParcel($parcelid);
-                if ($parcelData->country === "CZ") {
-                    $errors->add("$path.hasParcel", "Pro službu lze vybrat pouze zahraniční výdejní místo");
-                }
-            }
-        }
 
         if ($model instanceof ShipmentModel) {
-            if ($model->isInitialized("serviceCode") && $model->getServiceCode()) {
-                $code = $model->getServiceCode();
-                $parcelRequired = pplcz_parcel_required($code);
 
-                if (!$parcelRequired) {
-                    if ($this->getValue($model, "hasParcel")) {
-                        $errors->add("$path.hasParcel", "Metoda neumožňuje výběr výdejního místa");
+            if (!$method->getParcelRequired()) {
+                if ($this->getValue($model, "hasParcel")) {
+                    $errors->add("$path.hasParcel", "Metoda neumožňuje výběr výdejního místa");
+                }
+            } else if ($this->getValue($model, "hasParcel") && !$this->getValue($model, "parcel")) {
+                $errors->add("$path.hasParcel", "Je potřeba vybrat výdejní místo");
+            }
+
+            if ($method->getParcelRequired()) {
+
+                if ($model->getAge()
+                    && !in_array('CZ', $method->getCountries(), true)) {
+                    $errors->add("$path.age", "Mimo ČR nelze dělat kontrolu věku");
+                } else if ($model->getAge() && $model->getHasParcel()) {
+                    if ($model->isInitialized("parcel") && $model->getParcel() && !in_array('CZ', $method->getCountries(), true)) {
+                        $parcel = $model->getParcel();
+                        if ($parcel->getType() !== "ParcelShop") {
+                            $errors->add("$path.hasParcel", "Výdejní misto může být pouze obchod kvůli kontrole věku");
+                        }
                     }
-                } else if ($this->getValue($model, "hasParcel") && !$this->getValue($model, "parcel")) {
-                    $errors->add("$path.hasParcel", "Je potřeba vybrat výdejní místo");
                 }
 
-                if (in_array($code, ["PRIV", "PRID", "SMAR", "SMAD"]) && $model->isInitialized("recipient"))
-                {
-                    if ($this->getValue($model, "recipient.country") !== "CZ") {
-                        $errors->add("$path.recipient.country", "Služba není určena pro dopravu z České republiky do zahraničí");
+                $country = $this->getValue($model, "recipient.country");
+                if ($country) {
+                    if (!in_array($country, $method->getCountries(), true)) {
+                        if ($country === 'CZ')
+                            $errors->add("$path.hasParcel", "Služba není určena pro dopravu z České republiky do zahraničí");
+                        else
+                            $errors->add("$path.hasParcel", "Služba není určena pro dopravu v rámci České republiky");
                     }
                 }
-                else if(in_array($code, ["SMEU", "SMED", "CONN", "COND"]) && $model->isInitialized("recipient"))
-                {
-                    if ($this->getValue($model, "recipient.country") === "CZ") {
-                        $errors->add("$path.recipient.country", "Služba není určena pro dopravu v rámci České republiky");
+
+                if ($parcelid) {
+                    $parcelData = new \PPLParcel($parcelid);
+                    if ($parcelData) {
+                        $availableParcels = $method->getAvailableParcelTypes();
+                        if ($availableParcels && !in_array($parcelData->type, $availableParcels, true)) {
+                            $errors->add("$path.hasParcel", "Metoda nepodporuje dané výdejní místo");
+                        }
+                        if (!in_array($parcelData->country, $method->getCountries(), true)) {
+                            $errors->add("$path.hasParcel", "Výdejní místo je mimo dosah dané služby");
+                        }
+                        $country = $this->getValue($model, "recipient.country");
+                        if ($country && $parcelData->country !== $country)
+                        {
+                            $errors->add("$path.hasParcel", "Neshoduje se země příjemce a parcelshop/boxu");
+                        }
                     }
                 }
             }

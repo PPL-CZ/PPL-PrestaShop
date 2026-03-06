@@ -12,7 +12,7 @@ trait TDisplayExtraContent {
 
     public function hookDisplayHeader($params)
     {
-        $assetGeneratedName = "-1.0.5";
+        $assetGeneratedName = "-1.0.6";
         $this->context->controller->registerStylesheet(
             "ppl-label-method-css", "modules/pplshipping/assets/css/label-method{$assetGeneratedName}.css", [ "media" => "all"]
         );

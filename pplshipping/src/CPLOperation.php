@@ -1,9 +1,12 @@
 <?php
+
 namespace PPLShipping;
 
 use PluginPpl\MyApi2\Model\EpsApiMyApi2WebModelsShipmentBatchShipmentResultChildItemModel;
 use PluginPpl\MyApi2\Model\EpsApiMyApi2WebModelsShipmentBatchShipmentResultItemModel;
 use PPLPackage;
+use PPLShipping\GuzzleHttp\BodySummarizer;
+use PPLShipping\GuzzleHttp\Middleware;
 use PPLShipping\GuzzleHttp\HandlerStack;
 use PluginPpl\MyApi2\Api\AccessPointApi;
 use PluginPpl\MyApi2\Api\AddressWhisperApi;
@@ -43,18 +46,11 @@ use PluginPpl\MyApi2\Model\EpsApiMyApi2WebModelsShipmentShipmentStates;
 use PluginPpl\MyApi2\Model\EpsApiMyApi2WebModelsShipmentTrackAndTraceItemModel;
 use PluginPpl\MyApi2\ObjectSerializer;
 use PPLShipping\Psr\Http\Message\RequestInterface;
-/*
-use PPLShipping\Data\AddressData;
-use WoocommercePpl\Data\CodBankAccountData;
-use WoocommercePpl\Data\CollectionData;
-use WoocommercePpl\Data\PackageData;
-use WoocommercePpl\Data\ParcelData;
-use WoocommercePpl\Data\ShipmentData;
-*/
 use PPLShipping\Model\Model\LabelPrintModel;
 use PPLShipping\Model\Model\WhisperAddressModel;
 use PPLShipping\Serializer;
 use PPLShipping\Setting\ApiSetting;
+use PPLShipping\Setting\PhaseSetting;
 
 
 class CPLOperation
@@ -92,14 +88,14 @@ class CPLOperation
             ]
         ];
 
-        return array_map(function($item) {
+        return array_map(function ($item) {
             return Serializer::getInstance()->denormalize($item, LabelPrintModel::class);
         }, $available);
     }
 
     public function getFormat($format)
     {
-        switch($format) {
+        switch ($format) {
             case '1/PDF':
             case '4/PDF':
             case '4.2/PDF':
@@ -121,7 +117,7 @@ class CPLOperation
         \Configuration::deleteByName("PPLAccessToken");
     }
 
-    public function getAccessToken()
+    public function getAccessToken($timeout = 0)
     {
         $content = \Configuration::getGlobalValue("PPLAccessToken");
 
@@ -140,7 +136,7 @@ class CPLOperation
         $client_id = $myapi->getClientId();
 
 
-        if (strlen($client_secret) < 5 || strlen($client_secret) < 5)
+        if (strlen($client_id) < 5 || strlen($client_secret) < 10)
             return null;
 
         $auth = "Basic " . base64_encode("$client_id:$client_secret");
@@ -156,14 +152,12 @@ class CPLOperation
             $content["client_secret"] = $client_secret;
         }
 
-        $opts = array('http' =>
-            array(
+        $opts = array('http' => array_merge([
                 'ignore_errors' => true,
-                'timeout' => 5,
                 'method' => 'POST',
                 'header' => join("\r\n", $headers),
                 'content' => http_build_query($content),
-            ));
+            ], $timeout ? ['timeout' => $timeout] : []));
 
         $context = stream_context_create($opts);
         $url = self::ACCESS_TOKEN_URL;
@@ -189,15 +183,15 @@ class CPLOperation
         return null;
     }
 
-    public function createClientAndConfiguration()
+    public function createClientAndConfiguration($timeout = 0)
     {
         $handler = HandlerStack::create();
-        $handler->push(function ( $handler) {
+        $handler->push(Middleware::httpErrors(new BodySummarizer(1024)), 'http_errors');
+        $handler->push(function ($handler) {
             return function (RequestInterface $request, array $options) use ($handler) {
                 if ($request->getMethod() === "GET" || $request->getMethod() === "OPTIONS" || $request->getMethod() === "HEAD") {
                     $request = $request->withoutHeader("Content-Type");
-                }
-                else if ($request->getMethod() === "POST" || $request->getMethod() === "PUT" || $request->getMethod() === "PATCH") {
+                } else if ($request->getMethod() === "POST" || $request->getMethod() === "PUT" || $request->getMethod() === "PATCH") {
                     if (!$request->hasHeader("Content-Length")) {
                         $request = $request->withAddedHeader("Content-Length", $request->getBody()->getSize());
                         if (!$request->getBody()->getSize())
@@ -209,12 +203,18 @@ class CPLOperation
         });
 
 
-        $client = new \PPLShipping\GuzzleHttp\Client([
+        $client = new \PPLShipping\GuzzleHttp\Client(array_merge([
             "handler" => $handler
-        ]);
+        ], $timeout ? ['timeout' => $timeout] : []));
 
         $configuration = new Configuration();
-        $configuration->setAccessToken($this->getAccessToken());
+
+        $accessToken = $this->getAccessToken();
+        if (!$accessToken) {
+            throw new ApiException("Nelze získat přístup do CPL");
+        }
+
+        $configuration->setAccessToken($accessToken);
         $url = self::BASE_URL;
         $configuration->setHost($url);
 
@@ -223,7 +223,6 @@ class CPLOperation
 
     /**
      * @param int[] $shipments
-
      * @throws ApiException
      *
      * Vytvoření zásilek
@@ -236,8 +235,7 @@ class CPLOperation
         $batchdata->save();
 
         $shipments = \PPLShipment::findShipmentsByLocalBatchId($batchdata->id);
-        $shipments = array_map(function (\PPLShipment  $shipment)
-        {
+        $shipments = array_map(function (\PPLShipment $shipment) {
             $shipment->lock();
             $shipment->save();
             return $shipment;
@@ -246,12 +244,23 @@ class CPLOperation
         /**
          * @var EpsApiMyApi2WebModelsShipmentBatchCreateShipmentBatchModel $creator
          */
-        $creator = pplcz_denormalize($shipments, EpsApiMyApi2WebModelsShipmentBatchCreateShipmentBatchModel::class);
+        try {
+            $creator = pplcz_denormalize($shipments, EpsApiMyApi2WebModelsShipmentBatchCreateShipmentBatchModel::class);
+        } catch (\Exception $e) {
+            $batchdata->lock = false;
+            $batchdata->save();
+            foreach ($shipments as $shipment) {
+                $shipment->lock = false;
+                $shipment->save();
+            }
+            throw $e;
+        }
 
-        list($client, $configuration) = $this->createClientAndConfiguration();
-        $shipmentBatchApi = new ShipmentBatchApi($client, $configuration);
 
         try {
+            list($client, $configuration) = $this->createClientAndConfiguration();
+            $shipmentBatchApi = new ShipmentBatchApi($client, $configuration);
+
             $output = $shipmentBatchApi->createShipmentsWithHttpInfo($creator, "cs-CZ");
             $location = reset($output[2]["Location"]);
             $location = explode("/", $location);
@@ -268,23 +277,23 @@ class CPLOperation
                 $shipment->save();
             }
             return $batch_id;
-        }
-        catch (\Exception $ex) {
+        } catch (\Exception $ex) {
             $batchdata->lock = false;
             $batchdata->save();
             foreach ($shipments as $position => $shipment) {
 
                 $shipment->unlock();
-                if ($ex instanceof  ApiException && $ex->getResponseObject() instanceof  EpsApiInfrastructureWebApiModelProblemJsonModel) {
+                if ($ex instanceof ApiException && $ex->getResponseObject() instanceof EpsApiInfrastructureWebApiModelProblemJsonModel) {
                     /**
                      * @var array<string,string[]> $error
                      */
                     $errors = [];
                     $responseErrors = $ex->getResponseObject()->getErrors();
-                    foreach ($responseErrors as $errorKey =>$error )
-                    {
+                    if ($responseErrors === null)
+                        $responseErrors = [];
+                    foreach ($responseErrors as $errorKey => $error) {
                         $arguments = [];
-                        if (preg_match('/^shipments\[([0-9]+)]($|\.)/i', $errorKey, $arguments )){
+                        if (preg_match('/^shipments\[([0-9]+)]($|\.)/i', $errorKey, $arguments)) {
                             if ("{$arguments[1]}" === "$position") {
                                 foreach ($error as $err) {
                                     $errors[] = "{$err}";
@@ -293,6 +302,8 @@ class CPLOperation
 
                         }
                     }
+                    if (!$responseErrors)
+                        $errors[] = $ex->getMessage();
                     if ($errors) {
                         $errors = join("\n", $errors);
                         $shipment->import_errors = $errors;
@@ -328,7 +339,7 @@ class CPLOperation
         $shipmentApi->shipmentShipmentNumberCancelPost($shipmentNumber);
         $package->phase = "Canceled";
         $package->phase_label = "Canceled";
-        $package->lock = true;
+        $package->lock = false;
         $package->save();
     }
 
@@ -348,7 +359,7 @@ class CPLOperation
         $format = ($printFormat ?: \Configuration::getGlobalValue("PPLPrintSetting") ?: "");
         $format = $this->getFormat($format);
 
-        switch($format) {
+        switch ($format) {
             case '1/PDF':
                 $position = 1;
                 $format = 'default';
@@ -384,8 +395,7 @@ class CPLOperation
             $path = $file->getPathname();
             $content = file_get_contents($path);
             exit($content);
-        }
-        else {
+        } else {
             // načtu si info kolem batch
             $data = $shipmentApi->getShipmentBatch($batchId, null, null, null, 'ReferenceId');
             $items = $data->getItems();
@@ -431,7 +441,7 @@ class CPLOperation
                 throw new \Exception("Problem s nalezením zásilky k tisku");
 
             $items = $founded->getRelatedItems() ?? [];
-            $max = $shipmentNumber ? 1: (count($items) + 1);
+            $max = $shipmentNumber ? 1 : (count($items) + 1);
 
 
             $httpData = $shipmentApi->getShipmentBatchLabelWithHttpInfo($batchId, $max, $offset, $format, $position, null, null, null, "ReferenceId");
@@ -458,7 +468,7 @@ class CPLOperation
      */
     public function loadingShipmentNumbers($batchIds = [])
     {
-        $batch_label_group = date("Y-m-d H:i:s");
+        $batch_label_group = gmdate("Y-m-d H:i:s");
         foreach ($batchIds as $item) {
 
             list($client, $configuration) = $this->createClientAndConfiguration();
@@ -466,7 +476,7 @@ class CPLOperation
             $shipmentBatchApi = new ShipmentBatchApi($client, $configuration);
 
 
-            $batchData = $shipmentBatchApi->getShipmentBatchWithHttpInfo($item);
+            $batchData = $shipmentBatchApi->getShipmentBatchWithHttpInfo($item, "cs-CZ");
 
             $batchData = $batchData[0];
             $shipments = \PPLShipment::findRemoteBatchShipments($item);
@@ -484,8 +494,7 @@ class CPLOperation
 
                 foreach ($referenceShipments as $shipment) {
                     $packages = $shipment->get_package_ids();
-                    foreach ($packages as $key => $package)
-                    {
+                    foreach ($packages as $key => $package) {
                         $packages[$key] = new PPLPackage($package);
                     }
 
@@ -505,9 +514,11 @@ class CPLOperation
                     }
                     if ($package) {
                         $package = reset($package);
-                        /**
-                         * @var PPLPackage $package
-                         */
+                        $packages = array_filter($packages, function ($item) use ($package) {
+                            return $item->id !== $package->id;
+                        });
+
+
                         if ($batchItem->getLabelUrl()) {
                             $label_id = explode("/", $batchItem->getLabelUrl());
                             $label_id = end($label_id);
@@ -516,10 +527,14 @@ class CPLOperation
                         $package->shipment_number = ($baseShipmentNumber);
                         $package->import_error = ($errorMessage);
                         $package->import_error_code = ($errorCode);
+
+                        if ($errorCode) {
+                            $package->lock = false;
+                        }
                         $package->save();
                     }
 
-                    $packages = array_filter($packages, function (PPLPackage $item) use($baseShipmentNumber) {
+                    $packages = array_filter($packages, function (PPLPackage $item) use ($baseShipmentNumber) {
                         return $item->shipment_number !== $baseShipmentNumber;
                     });
 
@@ -538,6 +553,9 @@ class CPLOperation
 
                         if ($package) {
                             $package = reset($package);
+                            $packages = array_filter($packages, function ($item) use ($package) {
+                                return $item->id !== $package->id;
+                            });
 
                             if ($relatedItem->getLabelUrl()) {
                                 $label_id = explode("/", $relatedItem->getLabelUrl());
@@ -547,16 +565,23 @@ class CPLOperation
                             $package->shipment_number = $relatedItem->getShipmentNumber();
                             $package->import_error = $relatedItem->getErrorMessage();
                             $package->import_error_code = $relatedItem->getErrorCode();
+                            if ($relatedItem->getErrorCode()) {
+                                $package->lock = false;
+                            }
                             $package->save();
                         }
                     }
                     if ($batchData->getCompleteLabel()) {
                         $shipment->batch_label_group = $batch_label_group;
-                    }
-                    else
+                    } else
                         $shipment->batch_label_group = null;
 
                     $shipment->import_state = $batchItem->getImportState();
+                    if ($errorCode) {
+                        $shipment->lock = false;
+                        $shipment->import_state = "None";
+                        $shipment->import_errors = $errorMessage;
+                    }
                     $shipment->save();
                 }
             }
@@ -570,16 +595,11 @@ class CPLOperation
         $order = new OrderEventApi($client, $configuration);
         $ev = new EpsApiMyApi2WebModelsOrderEventCancelOrderEventModel();
         $ev->setNote("Zrušeno na vyžádání");
-        try {
-            $remoteId = $collection->reference_id;
-            $order->orderCancelPost(null, $remoteId, null, null, null, $ev);
-            $collection->state = "Canceled";
-            $collection->save();
-        }
-        catch (\Exception $ex)
-        {
-            throw $ex;
-        }
+
+        $remoteId = $collection->reference_id;
+        $order->orderCancelPost(null, $remoteId, "cs-CZ", null, null, $ev);
+        $collection->state = "Canceled";
+        $collection->save();
 
     }
 
@@ -602,12 +622,13 @@ class CPLOperation
         $sender->setPhone($collection->telephone);
         $sender->setContact($collection->contact);
 
-        $address = require_once  __DIR__ . '/config/collection_address.php';
+        $address = require_once __DIR__ . '/config/collection_address.php';
 
         $sender->setCity($address['city']);
         $sender->setZipCode($address['zip']);
         $sender->setCountry($address['country']);
         $sender->setStreet($address['street']);
+        $sender->setName($address['name']);
 
         $model->setSender($sender);
 
@@ -624,15 +645,18 @@ class CPLOperation
 
         $collection->remote_collection_id = $batch_id;
         $collection->state = "Created";
-        $collection->send_to_api_date = date("Y-m-d");
+        $collection->send_to_api_date = gmdate("Y-m-d");
         $collection->save();
 
     }
 
 
-
     public function testPackageStates(array $shipmentsNumbers)
     {
+        $accessToken = $this->getAccessToken();
+        if (!$accessToken)
+            return [];
+
         if (!$shipmentsNumbers) {
             return [];
         }
@@ -645,7 +669,7 @@ class CPLOperation
 
         $min = count($shipmentsNumbers);
 
-        $content = $accessPointApi->shipmentGetWithHttpInfo($min, 0, $shipmentsNumbers);
+        $content = $accessPointApi->shipmentGetWithHttpInfo($min, 0, $shipmentsNumbers, null, null, null, null, null, null, "cs-CZ");
 
         $data = $content[0];
 
@@ -676,7 +700,7 @@ class CPLOperation
                     'phase' => $lastEvent->getPhase() === null ? "Canceled" : $lastEvent->getPhase(),
                     'name' => $lastEvent->getName(),
                     "code" => $lastEvent->getCode(),
-                    "status"=> $lastEvent->getStatusId(),
+                    "status" => $lastEvent->getStatusId(),
                     'url' => $url,
                     'payed' => $codPayed
                 ];
@@ -688,75 +712,101 @@ class CPLOperation
 
         foreach ($returnData as $shipmentNumber => $data) {
 
-            foreach (array_filter($db,function (\PPLPackage $package) use ($shipmentNumber) {
+            foreach (array_filter($db, function (\PPLPackage $package) use ($shipmentNumber) {
                 return "{$package->shipment_number}" === "$shipmentNumber";
             }) as $key => $package) {
                 unset($db[$key]);
 
-                if ($package->phase !== $data['phase']
-                    || $package->status !== $data['status'] ) {
+                $phase = $data['phase'];
+                if ($phase === null)
+                    $phase = 'Canceled';
+                $status = $data['status'];
 
-                    if ($data['phase'] === null)
-                        $data['phase'] = 'Canceled';
+                if ($package->phase !== $phase
+                    || ('' . $package->status) !== ('' . $status)) {
 
-                    $package->status = $data["status"];
+                    $package->status = $status;
                     $package->status_label = @$statuses[$data['status']];
-                    $package->phase = $data["phase"];
+                    $package->phase = $phase;
                     $package->phase_label = $data['name'];
-                    $package->last_update_phase = date("Y-m-d H:i:s");
-                    $package->last_test_phase = date("Y-m-d H:i:s");
+                    $package->last_update_phase = gmdate("Y-m-d H:i:s");
+                    $package->last_test_phase = gmdate("Y-m-d H:i:s");
                     $package->import_error = null;
                     $package->import_error_code = null;
 
                     $package->save();
 
                     if ($data["payed"]) {
-                        $shipmentId = $package->id_ppl_shipment;
-                        $shipment = new \PPLShipment($shipmentId);
-                        $order = $shipment->id_order;
+
+                        $order = new \Order($shipment->id_order);
                         if ($order) {
-                            $order = new \Order($order);
-                            /*
-                            $hasCodStatus = $order->get_meta("_" . create_ppl_name("_cod_change_status"));
+                            $shipmentId = $package->id_ppl_shipment;
+                            $shipment = new \PPLShipment($shipmentId);
+
+
+                            $hasCodStatus = $order->getCurrentState() === (int)\Configuration::get('PS_OS_PAYMENT');
+
                             if (!$hasCodStatus) {
-                                $order->set_meta_data(["_" . create_ppl_name("_cod_change_status") => true]);
-                                $order->set_status("Completed");
+
+                                $order->setCurrentState((int)\Configuration::get('PS_OS_PAYMENT'));
                                 $order->save();
                             }
-                            */
+                        }
+                    }
+
+                    if ($data['phase']) {
+                        $shipmentId = $package->id_ppl_shipment;
+                        $shipment = new \PPLShipment($shipmentId);
+                        $orderId = $shipment->id_order;
+                        if ($orderId) {
+                            $order = new \Order($orderId);
+                            $phases = array_filter(PhaseSetting::getPhases()->getPhases(), function ($item) use ($data) {
+                                return $item->getCode() === $data['phase']
+                                    || $item->getCode() === 'Canceled' && $data['phase'] === 'Deleted';
+                            });
+                            $matchedPhase = reset($phases);
+                            if ($matchedPhase && $matchedPhase->getOrderState()) {
+                                $newState = (int)$matchedPhase->getOrderState();
+                                if ((int)$order->current_state !== $newState) {
+                                    $order->setCurrentState($newState);
+                                }
+                            }
                         }
                     }
                 } else {
                     $package->import_error = null;
-                    $package->set_import_error_code = null;
+                    $package->import_error_code = null;
                     if (!$package->last_update_phase)
-                        $package->last_update_phase = date("Y-m-d H:i:s");
-                    $package->set_last_test_phase = date("Y-m-d H:i:s");
+                        $package->last_update_phase = gmdate("Y-m-d H:i:s");
+                    $package->last_test_phase = gmdate("Y-m-d H:i:s");
                     $package->save();
                 }
             }
         }
 
-        foreach ($db as $package)
-        {
+        foreach ($db as $package) {
             $package->import_error = "NotFound";
             $package->import_error_code = "NotFound";
             if (!$package->last_update_phase)
-                $package->last_update_phase = date("Y-m-d H:i:s");
-            $package->last_test_phase = date("Y-m-d H:i:s");
+                $package->last_update_phase = gmdate("Y-m-d H:i:s");
+            $package->last_test_phase = gmdate("Y-m-d H:i:s");
             $package->save();
         }
-
     }
 
-    public function findParcel($code)
+    public function findParcel($code, $country, $timeout = 0)
     {
+        $accessToken = $this->getAccessToken($timeout);
+        if (!$accessToken)
+            return null;
 
-        list($client, $configuration) = $this->createClientAndConfiguration();
+        list($client, $configuration) = $this->createClientAndConfiguration($timeout);
 
         $accessPointApi = new AccessPointApi($client, $configuration);
-        $founded = $accessPointApi->accessPointGet(100,0, $code);
-        if (is_array($founded)) {
+
+        $founded = $accessPointApi->accessPointGet(100, 0, $code, $country);
+
+        if (is_array($founded) && isset($founded[0])) {
             return $founded[0];
         }
         return null;
@@ -771,7 +821,7 @@ class CPLOperation
         list($client, $configuration) = $this->createClientAndConfiguration();
 
         $codelistApi = new CodelistApi($client, $configuration);
-        $limitApi = $codelistApi->codelistShipmentPhaseGet(300,0);
+        $limitApi = $codelistApi->codelistShipmentPhaseGet(300, 0);
 
         $output = [];
 
@@ -792,7 +842,7 @@ class CPLOperation
         list($client, $configuration) = $this->createClientAndConfiguration();
 
         $codelistApi = new CodelistApi($client, $configuration);
-        $limitApi = $codelistApi->codelistStatusGet(300,0);
+        $limitApi = $codelistApi->codelistStatusGet(300, 0);
 
         $output = [];
 
@@ -812,7 +862,7 @@ class CPLOperation
         list($client, $configuration) = $this->createClientAndConfiguration();
 
         $codelistApi = new CodelistApi($client, $configuration);
-        $limitApi = $codelistApi->codelistCountryGet(300,0);
+        $limitApi = $codelistApi->codelistCountryGet(300, 0);
 
         $output = [];
 
@@ -833,8 +883,6 @@ class CPLOperation
 
         $codelistApi = new CustomerApi($client, $configuration);
         $addresses = $codelistApi->customerAddressGet();
-
-        $output = [];
 
         return $addresses;
     }
@@ -861,9 +909,7 @@ class CPLOperation
                     "max" => $item->getMaxPrice(),
                     "currency" => $item->getCurrency()
                 ];
-            }
-            else if ($item->getService() === "COD")
-            {
+            } else if ($item->getService() === "COD") {
                 $cods[] = [
                     "product" => $item->getProduct(),
                     "min" => $item->getMinPrice(),
@@ -898,14 +944,14 @@ class CPLOperation
         return $currencies;
     }
 
-    public function whisper($street = null, $city =null, $zip = null)
+    public function whisper($street = null, $city = null, $zip = null)
     {
         $accessToken = $this->getAccessToken();
         if ($accessToken && ($street || $city || $zip)) {
             list($client, $configuration) = $this->createClientAndConfiguration();
 
             $whisper = new AddressWhisperApi($client, $configuration);
-            $founded = $whisper->addressWhisperGet($street, $zip ? trim($zip): null, $city ? trim($city) : null, trim($city) ? 'City' : 'Street');
+            $founded = $whisper->addressWhisperGet($street, $zip ? trim($zip) : null, $city ? trim($city) : null, trim($city) ? 'City' : 'Street');
             $output = [];
             foreach ($founded as $key => $item) {
                 $wp = new WhisperAddressModel();

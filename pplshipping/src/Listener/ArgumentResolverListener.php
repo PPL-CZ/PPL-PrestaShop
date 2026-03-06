@@ -4,6 +4,7 @@ namespace  PPLShipping\Listener;
 use PrestaShop\PrestaShop\Core\Search\Filters\OrderFilters;
 use PrestaShopBundle\Controller\Admin\Sell\Order\OrderController;
 use Symfony\Component\HttpKernel\Event\ControllerArgumentsEvent;
+use Symfony\Component\HttpKernel\KernelEvents;
 
 class ArgumentResolverListener {
 
@@ -27,5 +28,12 @@ class ArgumentResolverListener {
         }
 
         return null;
+    }
+
+    public static function getSubscribedEvents(): array
+    {
+        return [
+            KernelEvents::CONTROLLER_ARGUMENTS => 'onKernelControllerArguments',
+        ];
     }
 }

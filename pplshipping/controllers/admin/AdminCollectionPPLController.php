@@ -12,7 +12,7 @@ class AdminCollectionPPLController extends AdminPPLController
     public function GetCollections(Request $request)
     {
 
-        if ($request->get("_token") !== $this->getToken())
+        if (!$this->isTokenValid($request->get("_token")))
         {
             return $this->send403();
         }
@@ -27,6 +27,11 @@ class AdminCollectionPPLController extends AdminPPLController
 
     public function CancelCollection($id, Request $request)
     {
+        if (!$this->isTokenValid($request->get("_token")))
+        {
+            return $this->send403();
+        }
+
         $cpl = new \PPLShipping\CPLOperation();
         $cpl->cancelCollection($id);
 
@@ -36,6 +41,11 @@ class AdminCollectionPPLController extends AdminPPLController
 
     public function OrderCollection($id, Request $request)
     {
+        if (!$this->isTokenValid($request->get("_token")))
+        {
+            return $this->send403();
+        }
+
         $cpl = new \PPLShipping\CPLOperation();
         $cpl->createCollection($id);
 
@@ -44,7 +54,7 @@ class AdminCollectionPPLController extends AdminPPLController
 
     public function CreateCollection(Request $request)
     {
-        if ($request->get("_token") !== $this->getToken())
+        if (!$this->isTokenValid($request->get("_token")))
         {
             return $this->send403();
         }
@@ -73,7 +83,7 @@ class AdminCollectionPPLController extends AdminPPLController
 
     public function GetLastCollection(Request $request)
     {
-        if ($request->get("_token") !== $this->getToken())
+        if (!$this->isTokenValid($request->get("_token")))
         {
             return $this->send403();
         }
@@ -91,11 +101,13 @@ class AdminCollectionPPLController extends AdminPPLController
 
     public function GetAddress(Request $request)
     {
-        if ($request->get("_token") !== $this->getToken())
+        if (!$this->isTokenValid($request->get("_token")))
         {
             return $this->send403();
         }
         $address = require __DIR__ . '/../../src/config/collection_address.php';
+        $address = pplcz_denormalize($address, \PPLShipping\Model\Model\CollectionAddressModel::class);
+        $address = pplcz_normalize($address);
 
         return new JsonResponse($address);
 

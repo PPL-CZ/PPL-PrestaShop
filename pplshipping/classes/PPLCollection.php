@@ -30,7 +30,7 @@ class PPLCollection extends ObjectModel {
         'table' => 'ppl_collection',
         'primary' => 'id_ppl_collection',
         'multilang' => false,
-        'multilang_shop' => true,
+        'multilang_shop' => false,
         'fields' => [
             'created_date' => ['type' => self::TYPE_DATE, 'allow_null' => true],
             'send_date' => ['type'=> self::TYPE_DATE, 'allow_null' => true],

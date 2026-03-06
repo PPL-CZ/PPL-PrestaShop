@@ -14,7 +14,7 @@ trait TAdminSetMedia
 
     public function hookActionAdminControllerSetMedia($params)
     {
-        $assetGeneratedName = "-1.0.5";
+        $assetGeneratedName = "-1.0.6";
 
         /**
          * @var \pplshipping $this
@@ -28,6 +28,8 @@ trait TAdminSetMedia
         $this->context->controller->addCSS($this->_path . "assets/css/admin-order{$assetGeneratedName}.css?" . $ver, "all", null, false);
         $this->context->controller->addJS($this->_path . "assets/js/ppl-map{$assetGeneratedName}.js?" . $ver, false);
         $this->context->controller->addCSS($this->_path . "assets/css/ppl-map{$assetGeneratedName}.css?" . $ver, "all", null, false);
+        $this->context->controller->addJS($this->_path . "assets/js/ppl-sizes{$assetGeneratedName}.js?" . $ver, false);
+        $this->context->controller->addJS($this->_path . "assets/js/ppl-size-category{$assetGeneratedName}.js?" . $ver, false);
     }
 
     private function getTMediaSetMediaPathForGenerate($name)
@@ -65,7 +67,7 @@ trait TAdminSetMedia
         }
         return $link->getAdminLink("AdminConfigurationPPL", true, [] ,[
             "pplpath" => $path,
-            "_token" => \Tools::getAdminToken("AdminConfigurationPPL")
+            "_token" => $this->createToken()
         ]);
     }
 

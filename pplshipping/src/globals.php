@@ -4,65 +4,9 @@ use PPLShipping\CPLOperation;
 use PPLShipping\Model\Model\PackageModel;
 use PPLShipping\Model\Model\ShipmentModel;
 
-function pplcz_get_phases() {
-    $phases = include  __DIR__ . '/config/shipment_phases.php';
-    $output =  array_map(function ($item, $key)  {
-        $defaultLangId = Configuration::get('PS_LANG_DEFAULT');
-        $hasState = Configuration::getGlobalValue("PPLWatchPhase{$key}States");
-        $states = OrderState::getOrderStates($defaultLangId);
-        $states = array_filter($states, function ($state) use ($hasState) {
-            return $hasState == $state['id_order_state'];
-        });
-
-        $state = array_values($states);
-
-        if ($state)
-        {
-            $state = ['code'=> $state[0]['id_order_state'], "title" => $state[0]['name']];
-        } else {
-            $state = null;
-        }
-
-        $output = [
-            'code' => $key,
-            'title' => $item,
-            'watch' =>  !!Configuration::getGlobalValue("PPLWatchPhase{$key}"),
-            "orderState" => $state,
-        ];
-        return $output;
-    }, $phases, array_keys($phases));
-    return $output;
-}
-
-function pplcz_set_phase($key, $watch, $orderChangeState) {
-
-    if ($watch) {
-        Configuration::updateGlobalValue("PPLWatchPhase{$key}", "true");
-    }
-    else
-    {
-        Configuration::deleteByName("PPLWatchPhase{$key}");
-    }
-
-    if ($orderChangeState)
-    {
-        Configuration::updateGlobalValue("PPLWatchPhase{$key}States", $orderChangeState);
-    }
-    else
-    {
-        Configuration::deleteByName("PPLWatchPhase{$key}States");
-    }
-}
-
-
-function pplcz_get_phase_max_sync() {
-    $value = Configuration::getGlobalValue("PPLPhasesMaxSync") ?: 200;
-    return intval($value) ?: 200;
-}
-
-function pplcz_set_phase_max_sync($value)
+function pplcz_create_name($name)
 {
-    Configuration::updateGlobalValue("PPLPhasesMaxSync", $value);
+    return "pplcz_" . $name;
 }
 
 function pplcz_get_cod_currencies() {
@@ -74,6 +18,8 @@ function pplcz_get_all_services() {
     return [
         "SMAR" => "PPL Parcel CZ Smart",
         "SMAD" => "PPL Parcel CZ Smart (dobírka)",
+        "SBOX" => "PPL Parcel CZ Smart To Box",
+        "SBOD" => "PPL Parcel CZ Smart To Box (dobírka)",
         "PRIV" => "PPL Parcel CZ Private",
         "PRID" => "PPL Parcel CZ Private (dobírka)",
 
@@ -88,6 +34,7 @@ function pplcz_get_services() {
     return [
         "SMAR" => "PPL Parcel CZ Smart",
         "PRIV" => "PPL Parcel CZ Private",
+        "SBOX" => "PPL Parcel CZ Smart To Box",
 
         "SMEU" => "PPL Parcel Smart Europe",
         "CONN" => "PPL Parcel Connect"
@@ -96,7 +43,7 @@ function pplcz_get_services() {
 
 function pplcz_parcel_required($code)
 {
-    return in_array($code, ["SMAD", "SMAR", "SMED","SMEU" ], true);
+    return in_array($code, ["SMAD", "SMAR", "SMED","SMEU", "SBOX", "SBOD"], true);
 }
 
 
@@ -123,6 +70,19 @@ function pplcz_get_cod_name($code)
     return false;
 }
 
+function pplcz_get_parcel_countries()
+{
+    $allowed_countries = pplcz_get_allowed_countries();
+
+    foreach ($allowed_countries as $key => $v) {
+        $mapCountries = ['CZ', 'SK', 'PL', 'DE', 'NL', 'RO', 'BG', 'HU', 'AT'];
+        if (!in_array($key, $mapCountries, true))
+            unset($allowed_countries[$key]);
+    }
+
+    return $allowed_countries;
+}
+
 function pplcz_get_allowed_countries() {
     $id = Context::getContext()->language->id;
 
@@ -132,9 +92,6 @@ function pplcz_get_allowed_countries() {
     {
         $get_countries[$value['iso_code']] = $value['name'];
     }
-
-
-    $output = [];
 
     $countries = include __DIR__ . '/config/countries.php';
     foreach ($get_countries as $key => $v) {

@@ -1,4 +1,7 @@
 <?php
+
+use PPLShipping\Setting\PhaseSetting;
+
 class pplshippingCronPPLModuleFrontController extends ModuleFrontController
 {
 
@@ -13,19 +16,22 @@ class pplshippingCronPPLModuleFrontController extends ModuleFrontController
         \Db::getInstance()->execute("delete from {$prefix}pplcz_log where ppl_log_id not in (select ppl_log_id from (select ppl_log_id from {$prefix}pplcz_log order by ppl_log_id desc limit 100) as temp)");
 
     }
-    
+
     private function phases()
     {
-        $phases = pplcz_get_phases();
         $phases = array_map(function ($item) {
-            return $item['code'];
-        }, array_filter($phases, function ($item) {
-            return $item['watch'];
+            return $item->getCode();
+        }, array_filter(PhaseSetting::getPhases()->getPhases(), function ($item) {
+            return $item->getWatch();
         }));
+
+        if (in_array('Canceled', $phases, true)) {
+            $phases[] = 'Deleted';
+        }
 
         $from = (new \DateTime())->sub(new \DateInterval("PT120M"));
         $lastUpdate = (new \DateTime())->sub(new \DateInterval("P16D"));
-        $max = pplcz_get_phase_max_sync();
+        $max = PhaseSetting::getPhases()->getMaxSync();
 
         $packages = PPLPackage::checkStates(array_merge(["None"], $phases), $from, $lastUpdate, $max + 1);
         $count = count($packages);
@@ -36,7 +42,7 @@ class pplshippingCronPPLModuleFrontController extends ModuleFrontController
             "next" => $next
         ]);
 
-        while ($packages) {
+        if ($packages) {
             $operation = new \PPLShipping\CPLOperation();
             if ($operation->getAccessToken()) {
                 $packages = array_values($packages);
@@ -58,12 +64,10 @@ class pplshippingCronPPLModuleFrontController extends ModuleFrontController
 
         $open = @fopen($path, "c+");
 
-        if ($open && !flock($open, LOCK_EX |LOCK_NB )) {
-            if ($counter === 0)
-            {
+        if ($open && !flock($open, LOCK_EX | LOCK_NB)) {
+            if ($counter === 0) {
                 $lastUpdate = filemtime($path);
-                if ($lastUpdate + 600 > time())
-                {
+                if ($lastUpdate + 600 > time()) {
                     @unlink($this->getPath());
                     return $this->tryLock(1);
                 }
@@ -77,8 +81,7 @@ class pplshippingCronPPLModuleFrontController extends ModuleFrontController
     public function initContent()
     {
         $secure_key = \Configuration::getGlobalValue("PPLShipmentCronKey");
-        if (!$secure_key || @$_GET['secure_key'] !== $secure_key)
-        {
+        if (!$secure_key || @$_GET['secure_key'] !== $secure_key) {
             http_response_code(403);
             die();
         }
@@ -105,24 +108,20 @@ class pplshippingCronPPLModuleFrontController extends ModuleFrontController
             fclose($file);
         }
 
-        if ($next)
+        if ($next) {
             $this->clearLogs();
-
-        if ($next)
-        {
             $url = $this->context->link->getModuleLink('pplshipping', 'CronPPL');
-            if ($next) {
-                $ctx = stream_context_create([
-                    "http" => [
-                        "timeout" => 5
-                    ],
-                    "ssl" => [
-                        "verify_peer" => false,
-                        "verify_peer_name" => false,
-                    ]
-                ]);
-                file_get_contents($url, false, $ctx);
-            }
+
+            $ctx = stream_context_create([
+                "http" => [
+                    "timeout" => 5
+                ],
+                "ssl" => [
+                    "verify_peer" => false,
+                    "verify_peer_name" => false,
+                ]
+            ]);
+            file_get_contents($url, false, $ctx);
         }
     }
 }

@@ -14,12 +14,22 @@ class CPLBatchCreateShipmentsDenormalizer implements DenormalizerInterface
     public function denormalize($data, string $type, ?string $format = null, array $context = [])
     {
         $createShipment = new EpsApiMyApi2WebModelsShipmentBatchCreateShipmentBatchModel();
+
         $createShipment->setShipments(array_map(function ($item) {
             if (!($item instanceof \PPLShipment))
                 $item = new \PPLShipment($item);
             if (!$item->id)
                 throw new \Exception("problem se zasilkou");
-            return Serializer::getInstance()->denormalize($item, EpsApiMyApi2WebModelsShipmentBatchShipmentModel::class);
+            try{
+                return Serializer::getInstance()->denormalize($item, EpsApiMyApi2WebModelsShipmentBatchShipmentModel::class);
+            }
+            catch (\Exception $exception)
+            {
+                $item->import_errors = $exception->getMessage();
+                $item->save();
+                throw $exception;
+            }
+
         }, $data));
 
         $batch = new EpsApiMyApi2WebModelsShipmentBatchLabelSettingsModelCompleteLabelSettings();

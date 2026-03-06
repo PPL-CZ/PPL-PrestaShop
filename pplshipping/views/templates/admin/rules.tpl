@@ -16,6 +16,10 @@
                     </select>
                 </label>
                 </div>
+            {elseif $value['type'] === 'sizes'}
+                <div>
+                    <input type="hidden" class="ppl-sizes-data" name="{$value['name']}" value="{if isset($value['value'])}{$value['value']|@json_encode|escape:'html':'UTF-8'}{else}[]{/if}" data-label="{$value['label']|escape:'html':'UTF-8'}">
+                </div>
             {/if}
 
         {/foreach}

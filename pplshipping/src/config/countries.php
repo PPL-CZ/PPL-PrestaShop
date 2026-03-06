@@ -11,7 +11,7 @@ return call_user_func(function() {
             $cpl = new PPLShipping\CPLOperation();
             $countries = $cpl->getCountries();
             if ($countries) {
-                Configuration::updateGlobalValue("PPLCountries", $countries);
+                Configuration::updateGlobalValue("PPLCountries", json_encode($countries));
                 return $countries;
             }
         }

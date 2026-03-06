@@ -9,9 +9,6 @@ return call_user_func(function() {
     if (!$limits  || defined("PPL_REFRESH")) {
         try {
             $cpl = new PPLShipping\CPLOperation();
-            ini_set('display_errors', 1);
-            ini_set('display_startup_errors', 1);
-            error_reporting(E_ALL);
             $limits = $cpl->getLimits();
 
             if ($limits) {
@@ -42,6 +39,8 @@ return call_user_func(function() {
             [ "product"=>"SMED", "min"=> 100000.01, "max"=>500000, 'country' => "CZ", 'currency'=>"CZK" ],
             [ "product"=>"RECI", "min"=> 100000.01, "max"=>500000, 'country' => "CZ", 'currency'=>"CZK" ],
             [ "product"=>"RECE", "min"=> 100000.01, "max"=>500000, 'country' => "CZ", 'currency'=>"CZK" ],
+            [ "product"=>"SBOD", "min"=> 20000.01, "max"=>500000, 'country' => "CZ", 'currency'=>"CZK" ],
+            [ "product"=>"SBOX", "min"=> 20000.01, "max"=>500000, 'country' => "CZ", 'currency'=>"CZK" ],
         ],
         "COD" => [
             [ "product"=>"BUSD", "min"=> 0.01, "max"=>100000, 'country' => "CZ", 'currency'=>"CZK" ],
@@ -59,6 +58,7 @@ return call_user_func(function() {
             [ "product"=>"COND", "min"=> 0.01, "max"=>7300, 'country' => "RO", 'currency'=>"RON" ],
             [ "product"=>"COND", "min"=> 0.01, "max"=>500, 'country' => "SI", 'currency'=>"EUR" ],
             [ "product"=>"COND", "min"=> 0.01, "max"=>2900, 'country' => "BG", 'currency'=>"BGN" ],
+            [ "product"=>"SBOD", "min"=> 0.01, "max"=>100000, 'country' => "CZ", 'currency'=>"CZK" ],
         ]
     ];
 });

@@ -26,7 +26,7 @@ class AdminShipmentPPLController extends AdminPPLController
 
     public function GetShipment($id, Request $request)
     {
-        if ($request->query->get("_token") !== $this->getToken())
+        if (!$this->isTokenValid($request->get("_token")))
             return $this->send403();
 
         $shipmentModel = $this->loadShipment($id);
@@ -36,9 +36,11 @@ class AdminShipmentPPLController extends AdminPPLController
         return $this->sendJsonModel(pplcz_denormalize($shipmentModel, ShipmentModel::class));
     }
 
-
     public function CreateShipment(Request $request)
     {
+        if (!$this->isTokenValid($request->get("_token")))
+            return $this->send403();
+
         /**
          * @var UpdateShipmentModel $updateShipmentModel
          */
@@ -61,6 +63,9 @@ class AdminShipmentPPLController extends AdminPPLController
 
     public function UpdateShipment($id, Request $request)
     {
+        if (!$this->isTokenValid($request->get("_token")))
+            return $this->send403();
+
         /**
          * @var UpdateShipmentModel $updateShipmentModel
          */
@@ -86,6 +91,9 @@ class AdminShipmentPPLController extends AdminPPLController
 
     public function UpdateRecipientAddress($id, Request $request)
     {
+        if (!$this->isTokenValid($request->get("_token")))
+            return $this->send403();
+
         $data = $this->getJson($request, RecipientAddressModel::class);
         $errors = pplcz_validate($data, "");
         if ($errors->errors)
@@ -104,6 +112,9 @@ class AdminShipmentPPLController extends AdminPPLController
 
     public function UpdateSenderAddress($id, Request $request)
     {
+        if (!$this->isTokenValid($request->get("_token")))
+            return $this->send403();
+
         $data = $this->getJson($request, UpdateShipmentSenderModel::class);
 
         $shipment = $this->loadShipment($id, true);
@@ -113,12 +124,14 @@ class AdminShipmentPPLController extends AdminPPLController
         $shipment->id_sender_address = $data->getSenderId();
         $shipment->import_errors = null;
         $shipment->save();
-        http_response_code(204);
-        die();
+        return new Response("", 204);
     }
 
     public function UpdateShipmentParcel($id, Request $request)
     {
+        if (!$this->isTokenValid($request->get("_token")))
+            return $this->send403();
+
         /**
          * @var UpdateShipmentParcelModel $sender
          */
@@ -129,10 +142,10 @@ class AdminShipmentPPLController extends AdminPPLController
 
 
 
-        $founded = \PPLParcel::getParcelByRemoteId($sender->getParcelCode());
+        $founded = \PPLParcel::getParcelByRemoteId($sender->getParcelCode(), $sender->getParcelCountry());
         if (!$founded) {
             $find = new CPLOperation();
-            $esp = $find->findParcel($sender->getParcelCode());
+            $esp = $find->findParcel($sender->getParcelCode(), $sender->getParcelCountry());
             if (!$esp) {
                 return new Response("", 404);
             }
@@ -148,7 +161,7 @@ class AdminShipmentPPLController extends AdminPPLController
 
     public function ShipmentRefreshLabels($id, Request $request)
     {
-        if ($request->query->get("_token") !== $this->getToken())
+        if (!$this->isTokenValid($request->get("_token")))
             return $this->send403();
 
         $shipment = $this->loadShipment($id);
@@ -169,7 +182,7 @@ class AdminShipmentPPLController extends AdminPPLController
 
     public function ShipmentRefreshStates($id, Request $request)
     {
-        if ($request->query->get("_token") !== $this->getToken())
+        if (!$this->isTokenValid($request->get("_token")))
             return $this->send403();
 
         $shipment = $this->loadShipment($id);
@@ -195,10 +208,9 @@ class AdminShipmentPPLController extends AdminPPLController
         return new JsonResponse("", 400);
     }
 
-
     public function ShipmentCancelPackage($id, $packageId, Request $request)
     {
-        if ($request->query->get("_token") !== $this->getToken())
+        if (!$this->isTokenValid($request->get("_token")))
             return $this->send403();
 
         $package = new \PPLPackage($packageId);
@@ -215,7 +227,7 @@ class AdminShipmentPPLController extends AdminPPLController
 
     public function ShipmentRemovePackage($id, Request $request)
     {
-        if ($request->query->get("_token") !== $this->getToken())
+        if (!$this->isTokenValid($request->get("_token")))
             return $this->send403();
 
 
@@ -249,7 +261,7 @@ class AdminShipmentPPLController extends AdminPPLController
 
     public function ShipmentAddPackage($id, Request $request)
     {
-        if ($request->query->get("_token") !== $this->getToken())
+        if (!$this->isTokenValid($request->get("_token")))
             return $this->send403();
 
         $pplshipment = $this->loadShipment($id, true);
@@ -277,7 +289,7 @@ class AdminShipmentPPLController extends AdminPPLController
 
     public function ShipmentRemove($id, Request $request)
     {
-        if ($this->getToken() !== $request->query->get("_token"))
+        if (!$this->isTokenValid($request->get("_token")))
             return $this->send403();
 
         $shipment = $this->loadShipment($id, true);

@@ -9,6 +9,7 @@ use PluginPpl\MyApi2\Model\EpsApiMyApi2WebModelsShipmentBatchShipmentModelSender
 use PluginPpl\MyApi2\Model\EpsApiMyApi2WebModelsShipmentBatchShipmentModelShipmentSet;
 use PluginPpl\MyApi2\Model\EpsApiMyApi2WebModelsShipmentBatchShipmentModelSpecificDelivery;
 use PPLShipping\Serializer;
+use PPLAddress;
 use PPLShipping\Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 
 class CPLBatchShipmentDenormalizer implements DenormalizerInterface
@@ -27,15 +28,25 @@ class CPLBatchShipmentDenormalizer implements DenormalizerInterface
                     $shipmentBatch->setCashOnDelivery(Serializer::getInstance()->denormalize($data, EpsApiMyApi2WebModelsShipmentBatchShipmentModelCashOnDelivery::class));
                 }
                 $shipmentBatch->setIntegratorId(self::INTEGRATOR);
-                $shipmentBatch->setReferenceId($data->reference_id);
                 $shipmentBatch->setNote($data->note);
+
+                if ($data->id_sender_address === null)
+                {
+                    $addresses = PPLAddress::get_default_sender_addresses();
+                    if ($addresses)
+                    {
+                        $data->id_sender_address = ($addresses[0]->get_id());
+                        $data->save();
+                    }
+                }
+
                 $shipmentBatch->setSender(Serializer::getInstance()->denormalize(new \PPLAddress($data->id_sender_address), EpsApiMyApi2WebModelsShipmentBatchShipmentModelSender::class));
                 $shipmentBatch->setRecipient(Serializer::getInstance()->denormalize(new \PPLAddress($data->id_recipient_address), EpsApiMyApi2WebModelsShipmentBatchRecipientAddressModel::class));
 
                 if ($data->has_parcel)
                     $shipmentBatch->setSpecificDelivery(Serializer::getInstance()->denormalize($data, EpsApiMyApi2WebModelsShipmentBatchShipmentModelSpecificDelivery::class ));
                 if ($data->age)
-                    $shipmentBatch->setAgeCheck($data->age);
+                    $shipmentBatch->setAgeCheck('A' . $data->age);
 
                 $shipmentBatch->setShipmentSet(Serializer::getInstance()->denormalize($data, EpsApiMyApi2WebModelsShipmentBatchShipmentModelShipmentSet::class));
 

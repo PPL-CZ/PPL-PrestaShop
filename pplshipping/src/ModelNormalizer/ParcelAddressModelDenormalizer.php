@@ -13,7 +13,7 @@ class ParcelAddressModelDenormalizer implements DenormalizerInterface {
         if ($data instanceof \Cart && ParcelAddressModel::class === $type) {
             $id = $data->id;
             $parcel = \PPLParcel::getParcelByCartId($id);
-            return self::denormalize($parcel, $type);
+            return $this->denormalize($parcel, $type);
         }
         else if ($data instanceof \PPLParcel && ParcelAddressModel::class === $type)
         {
@@ -54,7 +54,7 @@ class ParcelAddressModelDenormalizer implements DenormalizerInterface {
             if (isset($context['data']) && $context['data'])
                 $parcel = $context['data'];
             if (!$parcel)
-                $parcel = \PPLParcel::getParcelByRemoteId($data->getRemoteId());
+                $parcel = \PPLParcel::getParcelByRemoteId($data->getRemoteId(), $data->getCountry());
             if (!$parcel)
                 $parcel = new \PPLParcel();
 
@@ -80,7 +80,7 @@ class ParcelAddressModelDenormalizer implements DenormalizerInterface {
     public function supportsDenormalization($data, string $type, ?string $format = null)
     {
         return (($data instanceof \Cart || $data instanceof \PPLParcel || $data instanceof EpsApiMyApi2WebModelsAccessPointAccessPointModel) && ($type === ParcelAddressModel::class))
-                || $data instanceof ParcelAddressModel && $type = \PPLParcel::class;
+                || $data instanceof ParcelAddressModel && $type === \PPLParcel::class;
 
     }
 }

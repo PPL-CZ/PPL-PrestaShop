@@ -328,6 +328,12 @@ pplshipping_log_send_logs:
   defaults:
     _controller: AdminLogPPLController::SendLogs
 
+pplshipping_log_delete_log:
+  path: /admin/pplshipping/log/delete
+  methods: [ POST ]
+  defaults:
+    _controller: AdminLogPPLController::DeleteLog
+
 
 
 pplshipping_batch_replacement:

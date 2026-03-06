@@ -6,6 +6,7 @@ use PPLShipping\Model\Model\ProductRulesModel;
 
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\FormType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -17,7 +18,13 @@ trait TAdminProduct {
 
     public function hookActionProductUpdate($params)
     {
-        $modul = pplcz_denormalize($_POST, ProductRulesModel::class);
+        $postData = $_POST;
+        if (isset($postData['pplSizes']) && is_string($postData['pplSizes'])) {
+            $decoded = json_decode($postData['pplSizes'], true);
+            $postData['pplSizes'] = is_array($decoded) ? $decoded : [];
+        }
+
+        $modul = pplcz_denormalize($postData, ProductRulesModel::class);
 
         $table = \PPLBaseDisabledRule::getByProduct($params['id_product']);
         if ($table == null)
@@ -30,7 +37,18 @@ trait TAdminProduct {
 
     public function hookActionCategoryUpdate($params)
     {
-        $modul = pplcz_denormalize($_POST, CategoryRulesModel::class);
+        $postData = $_POST;
+
+        if (isset($postData['pplSize']) && is_string($postData['pplSize'])) {
+            $decoded = json_decode($postData['pplSize'], true);
+            if (is_array($decoded)) {
+                $postData['pplSize'] = $decoded;
+            } else {
+                unset($postData['pplSize']);
+            }
+        }
+
+        $modul = pplcz_denormalize($postData, CategoryRulesModel::class);
 
         $table = \PPLBaseDisabledRule::getByCagetory($params['category']->id);
         if ($table == null)
@@ -45,10 +63,17 @@ trait TAdminProduct {
     {
 
         $obj = \PPLBaseDisabledRule::getByProduct($params['id']);
+        $formData = $params['form_data']['shipping']['pplcz'];
+
+        if (isset($formData['pplSizes']) && is_string($formData['pplSizes'])) {
+            $decoded = json_decode($formData['pplSizes'], true);
+            $formData['pplSizes'] = is_array($decoded) ? $decoded : [];
+        }
+
         /**
          * @var \PPLBaseDisabledRule $table
          */
-        $table = pplcz_denormalize(pplcz_denormalize($params['form_data']['shipping']['pplcz'], ProductRulesModel::class), \PPLBaseDisabledRule::class, ['data' => $obj]);
+        $table = pplcz_denormalize(pplcz_denormalize($formData, ProductRulesModel::class), \PPLBaseDisabledRule::class, ['data' => $obj]);
         $table->id_product = $params['id'];
         $table->save();
         return;
@@ -57,10 +82,21 @@ trait TAdminProduct {
     public function hookActionAfterUpdateCategoryFormHandler($params)
     {
         $obj = \PPLBaseDisabledRule::getByCagetory($params['id']);
+        $formData = $params['form_data']['pplcz'];
+
+        if (isset($formData['pplSize']) && is_string($formData['pplSize'])) {
+            $decoded = json_decode($formData['pplSize'], true);
+            if (is_array($decoded)) {
+                $formData['pplSize'] = $decoded;
+            } else {
+                unset($formData['pplSize']);
+            }
+        }
+
         /**
          * @var \PPLBaseDisabledRule $table
          */
-        $table = pplcz_denormalize(pplcz_denormalize($params['form_data']['pplcz'], CategoryRulesModel::class), \PPLBaseDisabledRule::class, ['data' => $obj]);
+        $table = pplcz_denormalize(pplcz_denormalize($formData, CategoryRulesModel::class), \PPLBaseDisabledRule::class, ['data' => $obj]);
         $table->id_category = $params['id'];
         $table->save();
         return;
@@ -77,7 +113,12 @@ trait TAdminProduct {
         }
 
         $model = pplcz_normalize(pplcz_denormalize($obj, CategoryRulesModel::class));
-       // $fields = $params['fields'][0]['form']['input'];
+        if (!isset($model['pplSize'])) {
+            $model['pplSize'] = null;
+        }
+        if (isset($model['pplSize']) && is_object($model['pplSize'])) {
+            $model['pplSize'] = pplcz_normalize($model['pplSize']);
+        }
 
         $newform = [
             "form" => [
@@ -129,6 +170,14 @@ trait TAdminProduct {
                     ],
                 ];
             }
+            else if ($item['type'] === 'size_category') {
+                $params['fields_value'][$item['name']] = json_encode($item['value']);
+                $newform['form']['input'][] = [
+                    "type" => "html",
+                    "name" => $item['name'],
+                    "html_content" => '<input type="hidden" class="ppl-size-category-data" name="' . $item['name'] . '" value="' . htmlspecialchars(json_encode($item['value']), ENT_QUOTES) . '" data-label="' . htmlspecialchars($item['label'], ENT_QUOTES) . '" data-description="' . htmlspecialchars($item['description'] ?? '', ENT_QUOTES) . '">'
+                ];
+            }
         }
         $params['fields'][] = $newform;
     }
@@ -141,8 +190,13 @@ trait TAdminProduct {
         $obj = \PPLBaseDisabledRule::getByCagetory($params['id']);
         if ($obj == null)
             $obj = new \PPLBaseDisabledRule();
-        $obj->id_product = $params['id'];
+        $obj->id_category = $params['id'];
         $model = pplcz_normalize(pplcz_denormalize($obj, CategoryRulesModel::class));
+
+        if (!isset($model['pplSize'])) {
+            $model['pplSize'] = null;
+        }
+
         $this->createFormBuildertAdminProduct($model, $params['form_builder'], false);
     }
 
@@ -158,8 +212,13 @@ trait TAdminProduct {
         if ($obj == null)
             $obj = new \PPLBaseDisabledRule();
         $obj->id_product = $params['id_product'];
-        $model = pplcz_denormalize($obj, CategoryRulesModel::class);
+        $model = pplcz_denormalize($obj, ProductRulesModel::class); // FIX: CategoryRulesModel → ProductRulesModel
         $model = pplcz_normalize($model);
+
+        if (!isset($model['pplSizes'])) {
+            $model['pplSizes'] = [];
+        }
+
         $rules = $this->getTAdminProductRules($model);
 
         $this->smarty->assign([
@@ -179,6 +238,11 @@ trait TAdminProduct {
             $obj = new \PPLBaseDisabledRule();
         $obj->id_product = $params['id'];
         $model = pplcz_normalize(pplcz_denormalize($obj, ProductRulesModel::class));
+
+        if (!isset($model['pplSizes'])) {
+            $model['pplSizes'] = [];
+        }
+
         $this->createFormBuildertAdminProduct($model, $params['form_builder'], true);
     }
 
@@ -219,6 +283,17 @@ trait TAdminProduct {
                     $value['position'] = 6;
                     $value['type'] = 'choices';
                     $value['choices'] = pplcz_get_all_services();
+                    break;
+                case 'pplSizes':
+                    $value['label'] = "Produkt lze případně rozdělit na menší balíčky";
+                    $value['position'] = 7;
+                    $value['type'] = 'sizes';
+                    break;
+                case 'pplSize':
+                    $value['label'] = "Velikost balíku";
+                    $value['description'] = "Určuje, s jakou velikostí pracovat pro zjištění, zda je možná doprava (rozměry v cm)";
+                    $value['position'] = 7;
+                    $value['type'] = 'size_category';
                     break;
             }
             return $value;
@@ -281,6 +356,35 @@ trait TAdminProduct {
                         "group_by" => function() {
                             return "Možnosti";
                         }
+                    ]);
+                    break;
+                case 'sizes':
+                    // Hidden field s JSON daty + JavaScript vytváří UI dynamicky
+                    $currentSizes = $value['value'] ?? [];
+
+                    $info->add('pplSizes', HiddenType::class, [
+                        'label' => $this->l($value['label']),
+                        'required' => false,
+                        'data' => json_encode($currentSizes),
+                        'attr' => [
+                            'class' => 'ppl-sizes-data',
+                            'data-label' => $this->l($value['label'])
+                        ]
+                    ]);
+                    break;
+                case 'size_category':
+                    // Hidden field s JSON object (ne array!) + JavaScript vytváří UI pro single size
+                    $currentSize = $value['value'] ?? null;
+
+                    $info->add('pplSize', HiddenType::class, [
+                        'label' => $this->l($value['label']),
+                        'required' => false,
+                        'data' => json_encode($currentSize),
+                        'attr' => [
+                            'class' => 'ppl-size-category-data',
+                            'data-label' => $this->l($value['label']),
+                            'data-description' => $this->l($value['description'])
+                        ]
                     ]);
                     break;
             }

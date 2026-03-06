@@ -1,7 +1,7 @@
 <?php
 namespace PPLShipping\tmodule;
 
-class TCategory {
+trait TAdminCategory {
     public function hookDisplayCategoryForm($params)
     {
 

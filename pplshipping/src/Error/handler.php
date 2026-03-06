@@ -63,7 +63,7 @@ function pplcz_error_handler ($errno, $errstr, $errfile, $errline) {
         $line = isset($frame['line']) ? $frame['line'] : '';
         $function = isset($frame['function']) ? $frame['function'] : '';
         $args = isset($frame['args']) ? pplcz_format_args($frame['args']) : '';
-        $line = "#$key $file($line): $function($args)";
+        //$line = "#$key $file($line): $function($args)";
         $out[] = "#$key $file($line): $function($args)";
     }
 
@@ -74,7 +74,7 @@ function pplcz_error_handler ($errno, $errstr, $errfile, $errline) {
             $logdata = new \PPLLog();
             $logdata->message = $error;
             $logdata->errorhash = sha1($error);
-            $logdata->timestamp = date('Y-m-d H:i:s');
+            $logdata->timestamp = gmdate('Y-m-d H:i:s');
             $logdata->save();
         }
         catch (Throwable $ex)
@@ -104,10 +104,10 @@ function pplcz_shutdown_handler()
         }))
         {
             try {
-                $logdata = new \PPLCZ\Data\LogData();
+                $logdata = new \PPLLog();
                 $logdata->message = $error['message'];
                 $logdata->errorhash = sha1($error['message']);
-                $logdata->timestamp = date('Y-m-d H:i:s');
+                $logdata->timestamp = gmdate('Y-m-d H:i:s');
                 $logdata->save();
             }
             catch (\Throwable $ex)

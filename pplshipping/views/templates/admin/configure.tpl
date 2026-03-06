@@ -1,5 +1,5 @@
 
-<div id="pplshippingconfigure" class="{if isset($pplnewpresta)}pplnewpresta{/if}">
+<div id="pplshippingconfigure" class="{if isset($pplnewpresta)}pplnewpresta{/if} {if isset($ppl90presta)}ppl90presta{/if}">
     <div id="pplshippingcontent">
     </div>
 </div>
@@ -12,7 +12,7 @@
 
     @media screen and (min-width: 1040px){
 
-        #pplshippingconfigure {
+        #pplshippingconfigure:not(.ppl90presta) {
             position: relative;
             top: 120px;
         }
@@ -28,7 +28,7 @@
         }
     }
     @media screen and (max-width: 1040px) {
-        #pplshippingconfigure {
+        #pplshippingconfigure:not(.ppl90presta) {
             position: relative;
             top: 120px;
         }

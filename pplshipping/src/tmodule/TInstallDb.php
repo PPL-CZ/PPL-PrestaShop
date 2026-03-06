@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS `{$prefix}ppl_log` (
   `message` text NOT NULL,
   `errorhash` varchar(128) NOT NULL,
   PRIMARY KEY (`id_ppl_log`),
-  UNIQUE KEY `errorhas` (`errorhash`)
+  UNIQUE KEY `errorhash` (`errorhash`)
 ) ENGINE=$engine DEFAULT CHARSET=utf8mb4;
 ---split---
 CREATE TABLE IF NOT EXISTS `{$prefix}ppl_parcel` (
@@ -110,8 +110,7 @@ CREATE TABLE IF NOT EXISTS `{$prefix}ppl_shipment` (
   `age` varchar(3) DEFAULT NULL,
   `package_ids` text DEFAULT NULL,
   `lock` tinyint(4) NOT NULL,
-  PRIMARY KEY (`id_ppl_shipment`),
-  UNIQUE KEY `reference_id` (`reference_id`)
+  PRIMARY KEY (`id_ppl_shipment`)
 ) ENGINE=$engine DEFAULT CHARSET=utf8mb4;
 ---split---
 CREATE TABLE IF NOT EXISTS `{$prefix}ppl_collection` (
@@ -142,6 +141,7 @@ CREATE TABLE IF NOT EXISTS `{$prefix}ppl_base_disabled_rule` (
   `disabled_methods` text,
   `required_age18` tinyint(4),
   `required_age15` tinyint(4),
+  `ppl_sizes` text, 
   PRIMARY KEY (`id_base_disabled_rule`),
   UNIQUE KEY `id_product` (`id_product`),
   UNIQUE KEY `id_category` (`id_category`)
@@ -188,7 +188,7 @@ MULTILINE;
         }
 
         $sql = "SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = '" . pSQL( "{$prefix}ppl_shipment")  . "' ".
-               " AND TABLE_NAME = '" . pSQL("{$prefix}ppl_shipment") . "' AND INDEX_NAME = '" . pSQL("reference_id") . "'";
+               " AND TABLE_SCHEMA = '" . _DB_NAME_ . "' AND INDEX_NAME = '" . pSQL("reference_id") . "'";
         
         $result = Db::getInstance()->getValue($sql);
 
@@ -197,6 +197,17 @@ MULTILINE;
             Db::getInstance()->execute("ALTER TABLE `{$prefix}ppl_shipment` DROP INDEX `reference_id`;");
         }
 
+        $sql = "SELECT COLUMN_NAME
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_NAME = '" . pSQL("{$prefix}ppl_base_disabled_rule") . "'
+        AND TABLE_SCHEMA = '" . _DB_NAME_ . "'
+        AND COLUMN_NAME = '" . pSQL("ppl_sizes") . "'";
+
+        $result = Db::getInstance()->getValue($sql);
+        if (!$result)
+        {
+            Db::getInstance()->execute("ALTER TABLE `{$prefix}ppl_base_disabled_rule` ADD COLUMN `ppl_sizes` text NULL;");
+        }
 
         return $success;
     }

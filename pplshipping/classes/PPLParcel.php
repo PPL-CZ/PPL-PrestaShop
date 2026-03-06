@@ -28,10 +28,10 @@ class PPLParcel extends ObjectModel
 
     public $lng;
 
-    public static function getParcelByRemoteId($code)
+    public static function getParcelByRemoteId($code, $country)
     {
         $prefix = _DB_PREFIX_;
-        $row = \Db::getInstance()->getRow("select parcel.* from {$prefix}ppl_parcel parcel where parcel.remote_id = '" . \Db::getInstance()->escape($code) . "'");
+        $row = \Db::getInstance()->getRow("select parcel.* from {$prefix}ppl_parcel parcel where parcel.remote_id = '" . \Db::getInstance()->escape($code) . "' and parcel.country = '" . \Db::getInstance()->escape($country) ."'");
         $parcel = null;
         if ($row)
         {

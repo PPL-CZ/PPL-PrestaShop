@@ -6,7 +6,7 @@ class AdminFilePPLController extends  AdminPPLController
 {
     public function Download($batchRemoteId, Request $request)
     {
-        if ($this->getToken() !== $request->query->get("_token"))
+        if (!$this->isTokenValid($request->get("_token")))
             return $this->send403();
 
         $cpl = (new \PPLShipping\CPLOperation());

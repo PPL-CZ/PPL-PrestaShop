@@ -19,6 +19,8 @@ class AdminShipmentBatchPPLController extends AdminPPLController
 
     public function CreateLabels($id, Request $request)
     {
+        if (!$this->isTokenValid($request->get("_token")))
+            return $this->send403();
         /**
          * @var CreateShipmentLabelBatchModel $data
          */
@@ -42,7 +44,7 @@ class AdminShipmentBatchPPLController extends AdminPPLController
         }, PPLShipment::findShipmentsByLocalBatchId($batch->id));
 
         if (array_diff($shipmentIds, $batchShipmentIds) || array_diff($batchShipmentIds, $shipmentIds))
-            return new \WP_REST_Response(null, 400);
+            return new Response(null, 400);
 
 
         $cpl = new CPLOperation();
@@ -84,7 +86,7 @@ class AdminShipmentBatchPPLController extends AdminPPLController
 
     public function RefreshLabels($id, Request $request)
     {
-        if ($this->getToken() !== $request->query->get("_token"))
+        if (!$this->isTokenValid($request->get("_token")))
             return $this->send403();
 
         $shipment = PPLShipment::findShipmentsByLocalBatchId($id);
@@ -120,7 +122,8 @@ class AdminShipmentBatchPPLController extends AdminPPLController
 
     public function PrepareLabels($id, Request $request)
     {
-
+        if (!$this->isTokenValid($request->get("_token")))
+            return $this->send403();
         /**
          * @var PrepareShipmentBatchModel $data
          */
@@ -141,7 +144,7 @@ class AdminShipmentBatchPPLController extends AdminPPLController
         }, PPLShipment::findShipmentsByLocalBatchId($batch->id));
 
         if (array_diff($shipmentIds, $batchShipmentIds) || array_diff($batchShipmentIds, $shipmentIds))
-            return new \WP_REST_Response(null, 400);
+            return new Response(null, 400);
 
         foreach ($data->getItems() as $key => $item) {
             $hasError = true;
@@ -185,7 +188,7 @@ class AdminShipmentBatchPPLController extends AdminPPLController
 
     public function GetBatches(Request $request)
     {
-        if ($this->getToken() !== $request->query->get("_token"))
+        if (!$this->isTokenValid($request->get("_token")))
             return $this->send403();
 
         $free = $request->query->get("free");
@@ -202,7 +205,7 @@ class AdminShipmentBatchPPLController extends AdminPPLController
 
     public function CreateBatch(Request $request)
     {
-        if ($this->getToken() !== $request->query->get("_token"))
+        if (!$this->isTokenValid($request->get("_token")))
             return $this->send403();
 
         $batch = new PPLBatch();
@@ -214,7 +217,7 @@ class AdminShipmentBatchPPLController extends AdminPPLController
 
     public function GetBatchShipments($batchId, Request $request)
     {
-        if ($this->getToken() !== $request->query->get("_token"))
+        if (!$this->isTokenValid($request->get("_token")))
             return $this->send403();
 
 
@@ -230,7 +233,7 @@ class AdminShipmentBatchPPLController extends AdminPPLController
 
     public function RemoveBatchShipment($batchId, $shipmentId, Request  $request)
     {
-        if ($this->getToken() !== $request->query->get("_token"))
+        if (!$this->isTokenValid($request->get("_token")))
             return $this->send403();
 
         $shipment = new PPLShipment($shipmentId);
@@ -244,7 +247,7 @@ class AdminShipmentBatchPPLController extends AdminPPLController
 
     public function ReorderBatchShipment($batchId, Request  $request)
     {
-        if ($this->getToken() !== $request->query->get("_token"))
+        if (!$this->isTokenValid($request->get("_token")))
             return $this->send403();
 
         $shipments = $this->getJson($request);
@@ -256,9 +259,9 @@ class AdminShipmentBatchPPLController extends AdminPPLController
         return $response;
     }
 
-    public function AddBatchShipment($batchId, Request  $request)
+    public function AddBatchShipment($batchId, Request $request)
     {
-        if ($this->getToken() !== $request->query->get("_token"))
+        if (!$this->isTokenValid($request->get("_token")))
             return $this->send403();
         /**
          * @var PrepareShipmentBatchModel $data
@@ -288,10 +291,6 @@ class AdminShipmentBatchPPLController extends AdminPPLController
             }
             else if ($item->getOrderId())
             {
-                $finded = PPLShipment::findShipmentsByOrderID($item->getShipmentId());
-                if ($finded)
-                    continue;
-
                 $order = new Order($item->getOrderId());
                 $carrier = new Carrier($order->id_carrier);
                 $hasError = true;
@@ -313,7 +312,7 @@ class AdminShipmentBatchPPLController extends AdminPPLController
         }, $shipments));
 
         $response = new Response( null, 204);
-        $response->headers->set('x-entinty-id', $batchData->id);
+        $response->headers->set('x-entity-id', $batchData->id);
         return $response;
 
     }

@@ -18,7 +18,7 @@ class pplshipping extends CarrierModule {
     {
         $this->name = 'pplshipping';
         $this->tab = 'shipping_logistics';
-        $this->version = '1.0.5';
+        $this->version = '1.0.6';
         $this->author = 'PPL';
         $this->need_instance = 1;
         parent::__construct();
@@ -41,7 +41,7 @@ class pplshipping extends CarrierModule {
             $tab->name[$lang['id_lang']] = 'PPL doprava';
         }
         $tab->active = 1;
-        $tab->icon = 'icon-truck'; // Ikona pro záložku
+        $tab->icon = version_compare(_PS_VERSION_, '9.0.0', '>=') ? 'local_shipping' : 'icon-truck';
         return $tab->add();
     }
 
@@ -55,9 +55,13 @@ class pplshipping extends CarrierModule {
         $id_tab = (int) Tab::getIdFromClassName('AdminConfigurationPPL');
         if ($id_tab) {
             $tab = new Tab($id_tab);
-            $del = $tab->delete();
+            $tab->delete();
+            return true;
         }
-        return false;
+        else{
+            return false;
+        }
+
     }
 
     use \PPLShipping\tmodule\TInstallDb;
@@ -67,6 +71,8 @@ class pplshipping extends CarrierModule {
     use \PPLShipping\tmodule\TValidateOrder;
     use \PPLShipping\tmodule\TAdminProduct;
     use \PPLShipping\tmodule\TSmarty;
+    use \PPLShipping\tmodule\TToken;
+
 
     public function install()
     {
@@ -164,6 +170,7 @@ class pplshipping extends CarrierModule {
     public function uninstall()
     {
         $result = parent::uninstall();
+        $this->uninstallTab();
         $this->clearCache();
         return $result;
     }

@@ -16,7 +16,7 @@ class AdminConfigurationPPLController extends ModuleAdminController
     {
         if (isset($_GET['pplpath']))
         {
-            $v = realpath(__DIR__ . '/../../config/routes.yml');
+
             $config = Yaml::parseFile(__DIR__ . '/../../config/routes.yml');
             foreach ($config as $route => $path)
             {
@@ -56,11 +56,6 @@ class AdminConfigurationPPLController extends ModuleAdminController
                     if ($response instanceof \Symfony\Component\HttpFoundation\BinaryFileResponse)
                     {
                         $file = $response->getFile();
-                        $tempdir = sys_get_temp_dir();
-                        $readable = is_readable($file->getPath());
-                        $fileexists = file_exists($file->getPath());
-                        $size = filesize($file->getPath());
-                        $content = file_get_contents($file->getPath());
                         $res = fopen($file->getPath(), "r");
 
                         $output = [];
@@ -87,13 +82,19 @@ class AdminConfigurationPPLController extends ModuleAdminController
 
         $this->bootstrap = true;
 
-        $version = _PS_VERSION_;
         $variables = [];
-        if (strpos($version, "1.7") !== 0)
+        if (version_compare(_PS_VERSION_, '8.0.0', '>=') && version_compare(_PS_VERSION_, '9.0.0', '<'))
         {
             $variables["pplnewpresta"] =  true;
-            $this->context->smarty->assign($variables);
         }
+
+        if (version_compare(_PS_VERSION_, '9.0.0', '>='))
+        {
+            $variables['ppl90presta'] = true;
+        }
+
+        $this->context->smarty->assign($variables);
+
         $this->content = $this->context->smarty->fetch($this->module->getLocalPath() . '/views/templates/admin/configure.tpl');
         parent::initContent();
     }

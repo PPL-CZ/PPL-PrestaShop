@@ -26,12 +26,45 @@ class CPLBatchAddressDenormalizer implements DenormalizerInterface
 
         if ($data instanceof \PPLAddress && $type === EpsApiMyApi2WebModelsShipmentBatchRecipientAddressModel::class) {
             $recepient = new EpsApiMyApi2WebModelsShipmentBatchRecipientAddressModel();
-            $recepient->setName($data->name);
+
+            $name = preg_split("~\s+~", trim($data->name ?: ""));
+            $add = [];
+
+            while ($name)
+            {
+                $add[] = array_shift($name);
+                if (mb_strlen(join(' ', $add)) < 50)
+                {
+                    $recepient->setName(join (' ', $add));
+                }
+                else
+                {
+                    $name = array_merge([array_pop($add)], $name);
+                    break;
+                }
+            }
+
+            $add = [];
+
+            while ($name)
+            {
+                $add[] = array_shift($name);
+                if (mb_strlen(join(' ', $add)) < 50)
+                {
+                    $recepient->setName2(join (' ', $add));
+                }
+                else
+                {
+                    $name = array_merge([array_pop($add)], $name);
+                    break;
+                }
+            }
+
             $recepient->setPhone($data->phone);
             $recepient->setEmail($data->mail);
-            $recepient->setCity($data->city);
+            $recepient->setCity(trim($data->city) ?: "");
             $recepient->setZipCode($data->zip);
-            $recepient->setStreet($data->street);
+            $recepient->setStreet(trim($data->street) ?: "");
             $recepient->setCountry($data->country);
             return $recepient;
         }

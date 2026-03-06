@@ -41,7 +41,7 @@ class PPLPackage extends ObjectModel
         'table' => 'ppl_package',
         'primary' => 'id_ppl_package',
         'multilang' => false,
-        'multilang_shop' => true,
+        'multilang_shop' => false,
         'fields' => [
             'id_ppl_shipment' => ['type' => self::TYPE_INT, 'allow_null' => true],
             'reference_id' => ['type'=> self::TYPE_STRING, 'allow_null' => true],

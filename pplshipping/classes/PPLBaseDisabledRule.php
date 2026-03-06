@@ -19,6 +19,8 @@ class PPLBaseDisabledRule extends ObjectModel
 
     public $disabled_methods;
 
+    public $ppl_sizes;
+
     public static $definition = [
         'table' => 'ppl_base_disabled_rule',
         'primary' => 'id_base_disabled_rule',
@@ -33,6 +35,7 @@ class PPLBaseDisabledRule extends ObjectModel
             'disabled_parcelshop' => ['type' => self::TYPE_BOOL, 'allow_null'=>true],
             'disabled_alzabox' => ['type' => self::TYPE_BOOL, 'allow_null'=>true],
             'disabled_methods' => ['type' => self::TYPE_STRING, 'allow_null'=>true],
+            'ppl_sizes' => ['type' => self::TYPE_STRING, 'allow_null'=>true],
         ],
     ];
 

@@ -1,7 +1,7 @@
 <?php
-namespace PPLCZ\Setting;
+namespace PPLShipping\Setting;
 
-use PPLCZ\Model\Model\CountryModel;
+use PPLShipping\Model\Model\CountryModel;
 
 class CountrySetting {
 

@@ -61,12 +61,17 @@ abstract class ModelValidator {
 
     ];
 
-    public function isCurrency($value)
+    public function isEmail($email)
     {
-        $currencies = pplcz_get_allowed_countries();
-        return isset($currencies[$value]);
+        $email = trim($email);
+        return filter_var($email, FILTER_VALIDATE_EMAIL);
     }
 
+    public function isContact($name)
+    {
+        $name = trim($name);
+        return !!preg_match('/^([\p{Latin}\p{Cyrillic}\'\'.\-]+(?:\s+[\p{Latin}\p{Cyrillic}\'\'.\-]+)+)$/u', $name);
+    }
 
     public function isPhone($phoneNumber)
     {
@@ -87,7 +92,7 @@ abstract class ModelValidator {
         $content ="GB ^(([gG][iI][rR] {0,}0[aA]{2})|((([a-pr-uwyzA-PR-UWYZ][a-hk-yA-HK-Y]?[0-9][0-9]?)|(([a-pr-uwyzA-PR-UWYZ][0-9][a-hjkstuwA-HJKSTUW])|([a-pr-uwyzA-PR-UWYZ][a-hk-yA-HK-Y][0-9][abehmnprv-yABEHMNPRV-Y]))) {1,}[0-9][abd-hjlnp-uw-zABD-HJLNP-UW-Z]{2}))$
 CZ ^[1-7]\d{2}[ ]?\d{2}$
 DE ^\d{5}$
-SK ^[8|9|0]\d{2}[ ]?\d{2}$
+SK ^[890]\d{2}[ ]?\d{2}$
 AT ^\d{4}$
 PL ^\d{2}[\- ]?\d{3}$
 CH ^\d{4}$
@@ -115,7 +120,7 @@ LU ^\d{4}$
 HR ^\d{5}$
 CY ^\d{4}$
 IE ^.+$
-USA ^.+$
+US ^.+$
 CN ^.+$";
 
         $zips = array_filter(array_map("trim", preg_split("~\r?\n~", $content)));

@@ -3,6 +3,7 @@ namespace PPLShipping\Validator;
 
 use PPLShipping\Model\Model\ShipmentModel;
 use PPLShipping\Model\Model\UpdateShipmentModel;
+use PPLShipping\Setting\MethodSetting;
 
 class CodValidator  extends ModelValidator
 {
@@ -20,8 +21,9 @@ class CodValidator  extends ModelValidator
             return;
 
         $code = $model->getServiceCode();
-        $isCod = pplcz_get_cod_name($code) === $code;
+        $method = MethodSetting::getMethod($code);
 
+        $isCod = $method && $method->getCodAvailable();
         if (!$isCod)
             return;
 
@@ -39,12 +41,12 @@ class CodValidator  extends ModelValidator
                     $codValue = $this->getValue($model, $item);
             }
         }
-        if (strlen($model->getCodVariableNumber()) > 10)
+        if ($model->getCodVariableNumber() !== null && strlen($model->getCodVariableNumber()) > 10)
         {
             $errors->add("$path.codVariableNumber", "Velikost variabilního symbolu může být max 10 čísel");
         }
 
-        if (!preg_match('/^[0-9]+$/', $model->getCodVariableNumber()))
+        if ($model->getCodVariableNumber() !== null && !preg_match('/^[0-9]+$/', $model->getCodVariableNumber()))
         {
             $errors->add("$path.codVariableNumber", "Hodnota variabilního symbolu může být jen číslo");
         }

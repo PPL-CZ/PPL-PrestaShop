@@ -4,10 +4,11 @@ namespace PPLShipping\ModelNormalizer;
 use PPLShipping\Model\Model\CategoryRulesModel;
 use PPLShipping\Model\Model\CountryModel;
 use PPLShipping\Model\Model\CartModel;
-
 use PPLShipping\Model\Model\ParcelPlacesModel;
 use PPLShipping\Model\Model\ProductRulesModel;
 use PPLShipping\Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
+use PPLShipping\Utils\BoxPacker;
+use PPLShipping\Setting\MethodSetting;
 
 class CartModelDenormalizer implements DenormalizerInterface
 {
@@ -26,6 +27,8 @@ class CartModelDenormalizer implements DenormalizerInterface
         $shipmentCartModel->setDisabledByProduct(false);
         $shipmentCartModel->setDisabledByCountry(false);
         $shipmentCartModel->setDisabledByRules(false);
+        $shipmentCartModel->setDisabledByWeight(false);
+        $shipmentCartModel->setDisabledBySize(false);
         $shipmentCartModel->setParcelShopEnabled(true);
         $shipmentCartModel->setParcelBoxEnabled(true);
         $shipmentCartModel->setAlzaBoxEnabled(true);
@@ -70,7 +73,10 @@ class CartModelDenormalizer implements DenormalizerInterface
             $shipmentCartModel->setDisabledByCountry(true);
         }
 
-        if (in_array($code, ["SMAR", "SMEU"], true) && !in_array($countryCode, ["DE", "CZ", "SK", "PL"]))
+        if (in_array($code, ["SMAR", "SMEU"], true) && !in_array($countryCode, array_keys(pplcz_get_parcel_countries())))
+            $shipmentCartModel->setDisabledByCountry(true);
+
+        if (in_array($code, ["SBOX", "SBOD"], true) && $countryCode !== "CZ")
             $shipmentCartModel->setDisabledByCountry(true);
 
         $max = 100000;
@@ -103,7 +109,7 @@ class CartModelDenormalizer implements DenormalizerInterface
              */
             $parcelplaces = pplcz_denormalize(new \Configuration(), ParcelPlacesModel::class);
 
-            $hasCountries = array_diff(["CZ", "DE", "PL", "SK"], $parcelplaces->getDisabledCountries() ?: []);
+            $hasCountries = array_diff(array_keys(pplcz_get_parcel_countries()), $parcelplaces->getDisabledCountries() ?: []);
             $disabledByCountry = !in_array($countryCode, $hasCountries, true);
 
             $hasCountries = array_intersect(array_values($hasCountries), array_values($iso_codes));
@@ -117,6 +123,11 @@ class CartModelDenormalizer implements DenormalizerInterface
                 $shipmentCartModel->setParcelShopEnabled(false);
             }
 
+            if (in_array($code, ["SBOX", "SBOD"], true)) {
+                $shipmentCartModel->setAlzaBoxEnabled(false);
+                $shipmentCartModel->setParcelShopEnabled(false);
+            }
+
             if ($parcelplaces->getDisabledParcelShop())
                 $shipmentCartModel->setParcelShopEnabled(false);
             if ($parcelplaces->getDisabledParcelBox())
@@ -125,19 +136,75 @@ class CartModelDenormalizer implements DenormalizerInterface
                 $shipmentCartModel->setAlzaBoxEnabled(false);
         }
 
-
-
         if ($accountIn && $maxCodPrice && $maxCodPrice[0]['max'] > $max)
         {
             $shipmentCartModel->setDisableCod(false);
         }
+        $method = MethodSetting::getMethod($code);
+
+        $totalWeight = $data->getTotalWeight();
+
+        if ($method && $method->getMaxWeight() && $totalWeight > $method->getMaxWeight()) {
+            $shipmentCartModel->setDisabledByWeight(true);
+        }
+
+        $packagesSizes = [];
 
         foreach ($data->getProducts() as $product) {
             $id_product = $product['id_product'];
+            $quantity = (int)$product['cart_quantity'];
+            $name = $product['name'];
+            //$prestashopProduct = new \Product($id_product);
+
+            $productSize = [];
+
+            $length = $product['depth'];
+            $width = $product['width'];
+            $height = $product['height'];
+
+            if ($length || $width || $height) {
+                $productSize = array_values(array_filter([floatval($length), floatval($width), floatval($height)]));
+                $max = max($length, $width, $height);
+                if ($max > 0) {
+                    while (count($productSize) < 3) {
+                        $productSize[] = floatval($max);
+                    }
+                    $productSize['name'] = $name;
+                    $productSize['qty'] = $quantity;
+                } else {
+                    $productSize = [];
+                }
+            }
+
             /**
              * @var ProductRulesModel $rules
              */
             $rules = pplcz_denormalize(\PPLBaseDisabledRule::getByProduct($id_product), ProductRulesModel::class);
+
+            $pplSizes = [];
+
+            if ($method && $method->getMaxDimension()) {
+
+                if ($rules && $rules->getPplSizes()) {
+                    foreach ($rules->getPplSizes() as $pplSize) {
+                        if ($pplSize) {
+                            $current = array_values(array_filter([floatval($pplSize->getYSize()), floatval($pplSize->getZSize()), floatval($pplSize->getXSize())]));
+                            $max = floatval(max($current));
+                            if ($max > 0) {
+                                while (count($current) < 3) {
+                                    $current[] = $max;
+                                }
+                                $current['name'] = $name;
+                                $current['qty'] = $quantity;
+                                $pplSizes[] = $current;
+                            }
+                        }
+                    }
+                }
+                if (!$pplSizes && $productSize)
+                    $pplSizes[] = $productSize;
+            }
+
             $this->applyRules($shipmentCartModel, $code, $rules );
 
             $ids = \Product::getProductCategories($id_product);
@@ -153,13 +220,67 @@ class CartModelDenormalizer implements DenormalizerInterface
                  * @var CategoryRulesModel $rules
                  */
                 $rules = pplcz_denormalize(\PPLBaseDisabledRule::getByCagetory($item), CategoryRulesModel::class);
+
+                if ($method && $method->getMaxDimension() && !$pplSizes && $rules && $rules->getPplSize()) {
+                    $size = $rules->getPplSize();
+                    $current = array_values(array_filter([floatval($size->getYSize()), floatval($size->getZSize()), floatval($size->getXSize())]));
+                    $max = max($size->getYSize(), $size->getZSize(), $size->getXSize());
+                    if ($max > 0) {
+                        while (count($current) < 3) {
+                            $current[] = floatval($max);
+                        }
+
+                        $current['name'] = $name;
+                        $current['qty'] = $quantity;
+                    }
+                    if ($current) {
+                        $packagesSizes[] = $current;
+                    }
+                }
+
                 $this->applyRules($shipmentCartModel, $code, $rules);
+
                 $cat = new \Category($item);
                 if ($cat && $cat->id_parent)
                     $ids[] =  (int)$cat->id_parent;
             }
+
+            $packagesSizes = array_merge($packagesSizes, $pplSizes);
         }
 
+        if ($method && $method->getMaxDimension() && $packagesSizes) {
+            $sizes = $method->getMaxDimension();
+            $max = max($sizes);
+            if ($max > 0) {
+                while (count($sizes) < 3) {
+                    $sizes[] = $max;
+                }
+
+                $boxPacker = new BoxPacker();
+                $boxPacker->addBox("max", floatval($sizes[0]), floatval($sizes[1]), floatval($sizes[2]));
+
+                if ($method->getMaxPackages())
+                    $boxPacker->setMaxPackages($method->getMaxPackages());
+
+                foreach ($packagesSizes as $package) {
+                    $boxPacker->addItem($package['name'], floatval($package[0]), floatval($package[1]), floatval($package[2]), floatval($package['qty']));
+                }
+
+                $boxPacker->setStackingMode("all");
+                $resolved = $boxPacker->pack();
+
+                if (!$resolved || !$resolved['success']) {
+                    $shipmentCartModel->setDisabledBySize(true);
+                } else {
+                    foreach ($resolved['boxes'] as $box) {
+                        if ($box['metrics']['shape_efficiency'] < 65) {
+                            $shipmentCartModel->setDisabledBySize(true);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
 
         if (!$shipmentCartModel->getParcelShopEnabled() && !$shipmentCartModel->getParcelBoxEnabled() && !$shipmentCartModel->getAlzaBoxEnabled() && $shipmentCartModel->getParcelRequired())
         {

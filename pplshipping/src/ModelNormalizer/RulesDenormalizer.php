@@ -1,4 +1,5 @@
 <?php
+
 namespace PPLShipping\ModelNormalizer;
 
 use PPLShipping\Model\Model\CategoryRulesModel;
@@ -10,8 +11,7 @@ class RulesDenormalizer implements DenormalizerInterface
 
     public function denormalize($data, string $type, ?string $format = null, array $context = [])
     {
-        if ($data instanceof \PPLBaseDisabledRule)
-        {
+        if ($data instanceof \PPLBaseDisabledRule) {
             $model = $type === CategoryRulesModel::class ? new CategoryRulesModel() : new ProductRulesModel();
             $model->setPplDisabledAlzaBox(!!$data->disabled_alzabox);
             $model->setPplDisabledParcelShop(!!$data->disabled_parcelshop);
@@ -19,6 +19,20 @@ class RulesDenormalizer implements DenormalizerInterface
             $model->setPplDisabledTransport(array_filter(explode(";", $data->disabled_methods ?: "")));
             $model->setPplConfirmAge15(!!$data->required_age15);
             $model->setPplConfirmAge18(!!$data->required_age18);
+
+            if ($type === CategoryRulesModel::class) {
+                // CategoryRulesModel: single size object
+                $size = json_decode($data->ppl_sizes ?: 'null', true);
+                if ($size && is_array($size)) {
+                    $model->setPplSize(pplcz_denormalize($size, \PPLShipping\Model\Model\PackageSizeModel::class));
+                }
+            } else {
+
+                $sizes = json_decode($data->ppl_sizes ?: '[]', true);
+                $model->setPplSizes(array_map(function($size) {
+                    return pplcz_denormalize($size, \PPLShipping\Model\Model\PackageSizeModel::class);
+                }, $sizes));
+            }
             return $model;
         }
         else if ($data instanceof CategoryRulesModel || $data instanceof  ProductRulesModel)
@@ -47,6 +61,20 @@ class RulesDenormalizer implements DenormalizerInterface
             $model->disabled_methods = $transport ? join(';', $transport) : null;
             $model->required_age18 = !!$data->getPplConfirmAge18();
             $model->required_age15 = !!$data->getPplConfirmAge15();
+
+            if ($data instanceof CategoryRulesModel) {
+
+                $size = $data->getPplSize();
+                $model->ppl_sizes = $size ? json_encode(pplcz_normalize($size)) : null;
+            } else {
+                $sizes = $data->getPplSizes();
+                // Uložit pplSizes jako JSON (JavaScript už filtruje prázdné hodnoty)
+                $model->ppl_sizes = $sizes && is_array($sizes) && count($sizes) > 0
+                    ? json_encode(array_map(function ($size) {
+                        return pplcz_normalize($size);
+                    }, $sizes))
+                    : null;
+            }
             return $model;
 
         }

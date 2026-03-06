@@ -3,6 +3,7 @@ namespace PPLShipping\Validator;
 
 use PPLShipping\Model\Model\ShipmentModel;
 use PPLShipping\Model\Model\UpdateShipmentModel;
+use PPLShipping\Setting\MethodSetting;
 use PPLShipping\Validator;
 
 class ShipmentValidator extends ModelValidator
@@ -14,8 +15,6 @@ class ShipmentValidator extends ModelValidator
             || $model instanceof UpdateShipmentModel;
     }
 
-
-
     public function validate($model, $errors, $path)
     {
         if ($model instanceof UpdateShipmentModel) {
@@ -25,7 +24,26 @@ class ShipmentValidator extends ModelValidator
                 }
             }
 
+            if ($model->getServiceCode()) {
+                $code = $model->getServiceCode();
+                $method = MethodSetting::getMethod($code);
 
+                $isCod = $method && $method->getCodAvailable();
+                if ($isCod) {
+                    foreach (["codVariableNumber" => "Variabilní číslo musí být vyplněno", "codValue" => "Hodnota dobírky není určena", "codValueCurrency" => "Není určena měna dobírky", "senderId" =>"Je potřeba určit odesílatele pro etiketu"] as $item => $message) {
+                        if (!$this->getValue($model, $item)) {
+                            $errors->add("$path.{$item}", $message);
+                        }
+                    }
+                }
+                if ($code) {
+                    if (in_array($code, ["SMEU", "CONN", "SMED", "COND"])
+                        && count($model->getPackages()) > 1) {
+                        $errors->add("$path.packages", "Počet zásilek je omezen na jednu");
+                    }
+                }
+
+            }
             if (!$model->getPackages())
             {
                 $errors->add("$path.packages", "Přidejte aspoň jednu zásilku");
@@ -43,7 +61,11 @@ class ShipmentValidator extends ModelValidator
             /**
              * @var ShipmentModel $model
              */
-            foreach (["referenceId" => "Je nutné vyplnit referenci zásilky", "serviceCode" => "Je nutné vybrat službu", "sender" => "Je nutné určit odesílatele pro etiketu", "recipient" => "Není určen příjemce zásilky"] as $item => $message) {
+            foreach (["referenceId" => "Je nutné vyplnit referenci zásilky",
+                         "serviceCode" => "Je nutné vybrat službu",
+                         "sender" => "Je nutné určit odesílatele pro etiketu",
+                         "recipient" => "Není určen příjemce zásilky"] as $item => $message)
+            {
                 if (!$this->getValue($model, $item)) {
                     $errors->add("$path.{$item}", $message);
                 }
@@ -54,9 +76,19 @@ class ShipmentValidator extends ModelValidator
 
             $code = $this->getValue($model, 'serviceCode');
             if ($code) {
-                if (in_array($code, ["SMEU", "CONN", "SMED", "COND"])
-                    && count($model->getPackages()) > 1) {
-                    $errors->add("$path.packages", "Počet balíčku může být pouze 1");
+                $method = MethodSetting::getMethod($code);
+                if ($method)
+                {
+                    if ($method->getMaxPackages() && $model->getPackages() && $method->getMaxPackages() < count($model->getPackages()))
+                        $errors->add("$path.packages", "Počet balíčku může být pouze {$method->getMaxPackages()}");
+
+                    $countries = $method->getCountries();
+                    $recipient = $model->getRecipient();
+                    if ($recipient)
+                        if (!in_array($recipient->getCountry(), $countries, true))
+                        {
+                            $errors->add("$path.packages", "Nepovolená země {$recipient->getCountry()} pro tuto dopravu");
+                        }
                 }
             }
         }

@@ -42,11 +42,22 @@ class CollectionValidator extends ModelValidator
             $errors->add("$path.estimatedShipmentCount", "Příliš málo zásilek pro svoz");
         }
 
-        foreach (["contact" => "Kontakt musí být vyplněn", "telephone" => "Telefon musí být vyplněn", "email" => "Email musí být vyplněn"] as $item => $message)
+        $email = $this->getValue($model, 'email');
+        if (!$this->isEmail($email))
         {
-            if (!$this->getValue($model, $item)) {
-                $errors->add("$path.$item", $message);
-            }
+            $errors->add("$path.email", "Zadejte prosím platnou emailovou adresu.");
+        }
+
+        $telephone = $this->getValue($model, 'telephone');
+        if (!$this->isPhone($telephone))
+        {
+            $errors->add("$path.telephone", "Zadejte prosím platné telefonní číslo.");
+        }
+
+        $contact = $this->getValue($model, 'contact');
+        if (!$this->isContact($contact))
+        {
+            $errors->add("$path.contact", "Zadejte prosím platné kontaktní údaje.");
         }
 
     }

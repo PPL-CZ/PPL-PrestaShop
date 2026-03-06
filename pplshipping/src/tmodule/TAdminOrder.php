@@ -35,7 +35,7 @@ trait TAdminOrder {
 
             $id_carriers = [];
 
-            if ($refs) {
+            if (isset($refs) && $refs) {
                 $smtp = \Db::getInstance()->query("select `id_carrier` from {$prefix}carrier where `id_reference` in  (" . join(",", $refs) . ")");
                 foreach ($smtp as $item) {
                     $id_carriers[] = intval($item['id_carrier']);
@@ -90,7 +90,7 @@ trait TAdminOrder {
 
             if (array_filter($shipments, function ($item) {
                 $error = pplcz_validate($item, "");
-                return !!$error->errors ||  strpos("err", $item->getImportState()) !== false;
+                return !!$error->errors ||  strpos($item->getImportState(), "err") !== false;
             }))
             {
                 return '<span class="badge badge-warning">error</span>';
@@ -170,7 +170,7 @@ trait TAdminOrder {
             {
                 $refs[] = str_replace("PPLCarrier", "", $item['name']);
             }
-            if ($refs) {
+            if (isset($refs) && $refs) {
                 $smtp = \Db::getInstance()->query("select `id_carrier` from {$prefix}carrier where `id_reference` in  (" . join(",", $refs) . ")");
                 $id_carriers = [];
                 foreach ($smtp as $item) {
@@ -179,7 +179,7 @@ trait TAdminOrder {
             }
 
             $query = ["pplship.id_shipment_order is not null"];
-            if ($id_carriers) {
+            if (isset($id_carriers) && $id_carriers) {
                 $query[] = "$alias.id_carrier in (:id_carriers_ppl)";
                 $count->setParameter("id_carriers_ppl", $id_carriers, Connection::PARAM_INT_ARRAY);
                 $filter->setParameter("id_carriers_ppl", $id_carriers, Connection::PARAM_INT_ARRAY);
@@ -229,9 +229,16 @@ trait TAdminOrder {
         /**
          * @var ArgumentResolverListener $arguments
          */
-        $arguments = $this->get("PPLArguments");
+        try{
+            $arguments = $this->get("PPLArguments");
+        }
+        catch (\Exception $e){
+            $arguments = null;
+        }
 
-        if ($arguments->orderFilters
+
+        if ($arguments !== null
+            && $arguments->orderFilters
             && @$arguments->orderFilters->getFilters()["ppl_filter"] === "1")
          {
             $columns = $definition->getColumns();
@@ -270,9 +277,11 @@ trait TAdminOrder {
             $filterPPl = new Filter("ppl_filter", HiddenType::class );
 
         $filterPPl->setAssociatedColumn("ppl_carrier");
+
         $filterPPl->setTypeOptions([
-            "required"=> false,
+           "required" => false,
         ]);
+
         $filterPPl->setAssociatedColumn("ppl_filter");
         $filter->add($filterPPl);
 
@@ -293,13 +302,13 @@ trait TAdminOrder {
     public function hookDisplayAdminListAfter($params)
     {
 
-        $controller = \Context::getContext()->controller ;
+        $controller = \Context::getContext()->controller;
+
+        $shipments = [];
+        $orders = [];
 
         if (isset($params['route']) && $params['route'] === 'admin_orders_index')
         {
-            $shipments = [];
-            $orders = [];
-
             foreach ($params['grid']['data']['records'] as $record)
             {
                 $orders[$record['id_order']] = $record['id_order'];
@@ -308,31 +317,7 @@ trait TAdminOrder {
             if (!$orders)
                 return "";
 
-            $shipmentdata = \PPLShipment::findShipmentsByOrderID($orders);
-
-            $shipments = array_merge($shipments, array_filter($shipmentdata, function (\PPLShipment $item) use (&$orders) {
-                unset($orders[$item->id_order]);
-                return in_array($item->import_state, ["None", "Error", ""], true);
-            }));
-
-            $shipments = array_merge($shipments, array_values(array_map(function($item) {
-                return new \Order($item);
-            }, $orders)));
-
-            $shipments = array_filter(array_map(function($item) {
-                $model = pplcz_denormalize($item, ShipmentModel::class);
-                /**
-                 * @var ShipmentModel $model
-                 */
-                if (!$model->getServiceCode())
-                    return null;
-                $error = pplcz_validate($model, "")->errors;
-                if ($error)
-                    return null;
-                return [
-                    "shipment" => pplcz_normalize($model),
-                ];
-            }, $shipments));
+            $shipments = $this->getShipments($orders, $shipments);
 
             ob_start();
             ?><script type="text/javascript">
@@ -343,9 +328,6 @@ trait TAdminOrder {
         }
         else if ($controller instanceof \AdminOrdersControllerCore && $this->orders)
         {
-            $shipments = [];
-            $orders = [];
-
             foreach ($this->orders as $record)
             {
                 $orders[$record] = $record;
@@ -354,31 +336,8 @@ trait TAdminOrder {
             if (!$orders)
                 return "";
 
-            $shipmentdata = \PPLShipment::findShipmentsByOrderID($orders);
+            $shipments = $this->getShipments($orders, $shipments);
 
-            $shipments = array_merge($shipments, array_filter($shipmentdata, function (\PPLShipment $item) use (&$orders) {
-                unset($orders[$item->id_order]);
-                return in_array($item->import_state, ["None", "Error", ""], true);
-            }));
-
-            $shipments = array_merge($shipments, array_values(array_map(function($item) {
-                return new \Order($item);
-            }, $orders)));
-
-            $shipments = array_filter(array_map(function($item) {
-                $model = pplcz_denormalize($item, ShipmentModel::class);
-                /**
-                 * @var ShipmentModel $model
-                 */
-                if (!$model->getServiceCode())
-                    return null;
-                $error = pplcz_validate($model, "")->errors;
-                if ($error)
-                    return null;
-                return [
-                    "shipment" => pplcz_normalize($model),
-                ];
-            }, $shipments));
             ob_start();
             ?><script type="text/javascript">
             var pplShipments = <?php echo json_encode(array_values($shipments)); ?>;
@@ -389,11 +348,7 @@ trait TAdminOrder {
             <?php
             return ob_get_clean();
         }
-
     }
-
-
-
 
     public function hookDisplayAdminOrderTabLink($params)
     {
@@ -430,6 +385,7 @@ trait TAdminOrder {
             }
         }
 
+        $batchs = [];
 
         foreach ($orders as $key => $value)
         {
@@ -472,5 +428,36 @@ trait TAdminOrder {
         ]);
 
         return $this->display($this->getReflFile(), "views/templates/admin/ordershipping.tpl");
+    }
+
+    protected function getShipments($orders, $shipments) {
+
+        $shipmentdata = \PPLShipment::findShipmentsByOrderID($orders);
+
+        $shipments = array_merge($shipments, array_filter($shipmentdata, function (\PPLShipment $item) use (&$orders) {
+            unset($orders[$item->id_order]);
+            return in_array($item->import_state, ["None", "Error", ""], true);
+        }));
+
+        $shipments = array_merge($shipments, array_values(array_map(function($item) {
+            return new \Order($item);
+        }, $orders)));
+
+        $shipments = array_filter(array_map(function($item) {
+            $model = pplcz_denormalize($item, ShipmentModel::class);
+            /**
+             * @var ShipmentModel $model
+             */
+            if (!$model->getServiceCode())
+                return null;
+            $error = pplcz_validate($model, "")->errors;
+            if ($error)
+                return null;
+            return [
+                "shipment" => pplcz_normalize($model),
+            ];
+        }, $shipments));
+
+        return $shipments;
     }
 }

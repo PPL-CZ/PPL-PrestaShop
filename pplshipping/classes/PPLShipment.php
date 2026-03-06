@@ -67,7 +67,7 @@ class PPLShipment extends ObjectModel {
             'has_parcel'=> ['type'=>self::TYPE_BOOL, 'allow_null' => true],
             'id_parcel'=>['type'=>self::TYPE_INT, 'allow_null' => true],
             'batch_id' =>['type'=>self::TYPE_STRING, 'allow_null' => true],
-            "id_batch_local" =>['type'=>self::TYPE_STRING, 'allow_null' => true],
+            "id_batch_local" =>['type'=>self::TYPE_INT, 'allow_null' => true],
             'note' => ['type'=>self::TYPE_STRING, 'allow_null' => true],
             'age'=>['type'=>self::TYPE_STRING, 'allow_null' => true],
             'lock'=>['type'=>self::TYPE_BOOL],
@@ -115,7 +115,8 @@ class PPLShipment extends ObjectModel {
         foreach ($this->get_package_ids() as $id)
         {
             $package = new PPLPackage($id);
-            $package->id_order = $this->id;
+            $package->id_order = $this->id_order;
+            $package->id_ppl_shipment = $this->id;
             $package->lock = true;
             $package->save();
         }
@@ -269,5 +270,4 @@ class PPLShipment extends ObjectModel {
             "print_state" => $print_state
         ], "id_ppl_shipment = $id");
     }
-
-};
+}

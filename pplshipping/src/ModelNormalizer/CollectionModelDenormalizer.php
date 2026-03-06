@@ -44,9 +44,10 @@ class CollectionModelDenormalizer implements DenormalizerInterface
 
             $collection->state = "BeforeSend";
             $collection->send_date = $data->getSendDate();
-            $collection->created_date = date("Y-m-d");
+            $collection->created_date = gmdate("Y-m-d");
             $collection->estimated_shipment_count = $data->getEstimatedShipmentCount();
             $collection->shipment_count = $collection->estimated_shipment_count;
+
             if ($data->isInitialized("note"))
                 $collection->note = $data->getNote();
 
@@ -65,7 +66,7 @@ class CollectionModelDenormalizer implements DenormalizerInterface
 
     public function supportsDenormalization($data, string $type, ?string $format = null)
     {
-        return $type === CollectionModel::class && $data instanceof \PPLCollection
-                || $type ===\PPLCollection::class && $data instanceof NewCollectionModel;
+        return ($type === CollectionModel::class && $data instanceof \PPLCollection)
+                || ($type ===\PPLCollection::class && $data instanceof NewCollectionModel);
     }
 }

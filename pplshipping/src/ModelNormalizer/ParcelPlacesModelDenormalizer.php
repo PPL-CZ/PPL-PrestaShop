@@ -45,7 +45,7 @@ class ParcelPlacesModelDenormalizer implements DenormalizerInterface
                 \Configuration::updateGlobalValue("PPLDisabledAlzaBox", "");
 
             $countries = array_filter($data->getDisabledCountries() ?: [], function($item) {
-              return in_array($item, ['CZ', 'SK', "PL", "DE"], true);
+              return in_array($item, array_keys(pplcz_get_parcel_countries()), true);
             });
 
             $lang = $data->getMapLanguage();

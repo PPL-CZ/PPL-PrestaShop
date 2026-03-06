@@ -1,14 +1,17 @@
 <?php
 
-use Psr\Container\ContainerInterface;
-use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Response;
+use PPLShipping\tmodule\TToken;
 use PrestaShopBundle\Service\DataProvider\UserProvider;
-use \Symfony\Component\Security\Csrf\CsrfTokenManager;
-use Symfony\Contracts\Service\Attribute\SubscribedService;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 
-abstract class AdminPPLController extends \PrestaShopBundle\Controller\Admin\FrameworkBundleAdminController {
+
+
+abstract class AdminPPLController extends \PrestaShopBundle\Controller\Admin\FrameworkBundleAdminController
+{
+
+    use TToken;
 
     private $token;
 
@@ -18,14 +21,17 @@ abstract class AdminPPLController extends \PrestaShopBundle\Controller\Admin\Fra
     }
 
 
-    public function getToken() {
+    public function getToken()
+    {
         if ($this->token)
             return $this->token;
-
-        $username = $this->userProvider->getUsername();
-        return $this->tokenManager->getToken($username)->getValue();
+        return $this->token = \Tools::getAdminToken("AdminConfigurationPPL");
     }
 
+
+    /**
+     * @var \Symfony\Component\Security\Csrf\CsrfTokenManagerInterface
+     */
     private $tokenManager;
 
     public function setTokenManager(\Symfony\Component\Security\Csrf\CsrfTokenManagerInterface $tokenManager)
@@ -47,25 +53,20 @@ abstract class AdminPPLController extends \PrestaShopBundle\Controller\Admin\Fra
             $shops = $shopGroup->getAssociatedShops();
             Context::getContext()->shop = new Shop(reset($shops));
             Context::getContext()->shop->id = null;
-        }
-
-        else if ($id_shop)
-        {
+        } else if ($id_shop) {
             Context::getContext()->shop = new Shop($id_shop);
         }
     }
 
     public function send400($errors = null)
     {
-
         if (!$errors) {
             return new JsonResponse(array(
                 "code" => "InvalidJson",
                 "errors" => [
                     "InvalidJson" => "Invalid json data"
                 ]), 400);
-        }
-        else {
+        } else {
             return new JsonResponse(array(
                 "data" => [
                     "code" => "element.error.dataerror.validation",
@@ -76,7 +77,8 @@ abstract class AdminPPLController extends \PrestaShopBundle\Controller\Admin\Fra
         }
     }
 
-    public function send403() {
+    public function send403()
+    {
         return new Response("", 403);
     }
 
@@ -94,18 +96,16 @@ abstract class AdminPPLController extends \PrestaShopBundle\Controller\Admin\Fra
 
     public function getJson(Request $request, $class = null)
     {
-        $token = $request->query->get("_token");
-
-        if ($token !== $this->getToken()) {
+        if (!$this->isTokenValid($request->get("_token"))) {
             return $this->send403();
         }
+
         $inputJSON = file_get_contents('php://input');
         $input = @json_decode($inputJSON, true); // true znamená, že chceme asociativní pole
         if (is_array($input)) {
             array_walk($input, function (&$value) {
                 if (is_string($value))
                     $value = strip_tags($value);
-
             });
         }
         if (json_last_error() !== JSON_ERROR_NONE) {
@@ -115,5 +115,4 @@ abstract class AdminPPLController extends \PrestaShopBundle\Controller\Admin\Fra
             return pplcz_denormalize($input, $class);
         return $input;
     }
-
 }

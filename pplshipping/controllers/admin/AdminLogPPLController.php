@@ -11,17 +11,54 @@ class AdminLogPPLController extends  AdminPPLController
 {
     public function GetLogs(Request $request)
     {
-        if ($this->getToken() !== $request->query->get("_token"))
+        if (!$this->isTokenValid($request->get("_token")))
             return $this->send403();
 
-        $logModel = pplcz_denormalize(new ErrorLogModel(), ErrorLogModel::class);
+        $product_ids = [];
+        $order_ids = [];
+
+        if ($request->query->get("product_ids"))
+            $product_ids = array_map('intval', explode(',', $request->query->get('product_ids')));
+        if ($request->query->get('order_ids'))
+            $order_ids = array_map('intval', explode(',', $request->query->get('order_ids')));
+
+        $logModel = pplcz_denormalize(new ErrorLogModel(), ErrorLogModel::class, [
+            'product_ids' => $product_ids,
+            'order_ids' => $order_ids
+        ]);
         $logModel = pplcz_normalize($logModel);
 
-        return new JsonResponse(pplcz_normalize($logModel));
+        return new JsonResponse($logModel);
+    }
+
+    public function DeleteLog(Request $request)
+    {
+        if (!$this->isTokenValid($request->get("_token")))
+            return $this->send403();
+
+        $data = $this->getJson($request);
+        $id = $data['id'] ?? null;
+
+        if (!$id) {
+            return new Response("Missing id", 400);
+        }
+
+        $log = new \PPLLog($id);
+
+        if (!$log->id) {
+            return new Response("", 404);
+        }
+
+        $log->delete();
+
+        return new Response("", 204);
     }
 
     public function SendLogs(Request $request)
     {
+        if (!$this->isTokenValid($request->get("_token")))
+            return $this->send403();
+
         /**
          * @var SendErrorLogModel $inputError
          */
@@ -49,7 +86,7 @@ class AdminLogPPLController extends  AdminPPLController
         },$inputError->getErrors())));
 
         $textMessage = $message . "\n" . $info . "\nVýpis systémových logů\n" . $errors;
-        $htmlMessage ="<p>" . str_replace("\n", "<br>",$message) . "</p><p>" . str_replace("\n", "<br>", $info);
+        $htmlMessage ="<p>" . str_replace("\n", "<br>",htmlspecialchars($message)) . "</p><p>" . str_replace("\n", "<br>", htmlspecialchars($info));
 
         $adminEmail = Configuration::get('PS_SHOP_EMAIL');
         $fileAttachment = [

@@ -1,6 +1,8 @@
 <?php
 
 use PPLShipping\CPLOperation;
+use PPLShipping\Setting\MethodSetting;
+use PPLShipping\Setting\PhaseSetting;
 use PPLShipping\Errors;
 use PPLShipping\Model\Model\SenderAddressModel;
 use PPLShipping\Serializer;
@@ -19,7 +21,7 @@ class AdminSettingPPLController extends AdminPPLController
     public function GetApi(Request $request)
     {
         $token = $request->query->get("_token");
-        if ($token !== $this->getToken()) {
+        if (!$this->isTokenValid($token)) {
             return $this->send403();
         }
 
@@ -36,6 +38,11 @@ class AdminSettingPPLController extends AdminPPLController
 
     public function SetApi(Request $request)
     {
+        $token = $request->query->get('_token');
+        if (!$this->isTokenValid($token)) {
+            return $this->send403();
+        }
+
         $json = $this->getJson($request);
         /**
          * @var \PPLShipping\Model\Model\MyApi2 $myApi
@@ -54,13 +61,12 @@ class AdminSettingPPLController extends AdminPPLController
             if (!$accessToken) {
                 http_response_code(400);
                 die(json_encode("Nelze se pomocí zadaných údajů přihlásit"));
+
             }
 
-            return  new Response("", 204);
+            return new Response("", 204);
 
-        }
-        catch (\Exception $ex)
-        {
+        } catch (\Exception $ex) {
             throw $ex;
         }
     }
@@ -68,7 +74,7 @@ class AdminSettingPPLController extends AdminPPLController
     public function GetShopGroups(Request $request)
     {
         $token = $request->query->get("_token");
-        if ($token !== $this->getToken()) {
+        if (!$this->isTokenValid($token)) {
             return new \Symfony\Component\HttpFoundation\Response("", 403);
         }
 
@@ -81,12 +87,11 @@ class AdminSettingPPLController extends AdminPPLController
         return new JsonResponse($output);
     }
 
-
     public function GetAddresses(Request $request)
     {
 
         $token = $request->query->get("_token");
-        if ($token !== $this->getToken()) {
+        if (!$this->isTokenValid($token)) {
             return $this->send403();
         }
 
@@ -94,21 +99,25 @@ class AdminSettingPPLController extends AdminPPLController
         $shop_group_id = $request->query->get("shop_group_id") ?: null;
 
         $senders = \PPLAddress::get_default_sender_addresses($shop_group_id, $shop_id);
-        foreach ($senders as $key => $value)
-        {
+        foreach ($senders as $key => $value) {
             $senders[$key] = pplcz_denormalize($value, SenderAddressModel::class);
             $senders[$key] = pplcz_normalize($senders[$key], "array");
         }
 
-        return  new JsonResponse($senders);
+        return new JsonResponse($senders);
     }
 
     public function RemoveAddresses(Request $request)
     {
+        $token = $request->query->get('_token');
+        if (!$this->isTokenValid($token)) {
+            return $this->send403();
+        }
+
         $shop_id = $request->query->get("shop_id") ?: null;
         $shop_group_id = $request->query->get("shop_group_id") ?: null;
         $token = $request->query->get('_token');
-        if ($token !== $this->getToken()) {
+        if (!$this->isTokenValid($token)) {
             return $this->send403();
         }
         \PPLAddress::clear_sender_addresses($shop_group_id, $shop_id);
@@ -117,6 +126,11 @@ class AdminSettingPPLController extends AdminPPLController
 
     public function SetAddresses(Request $request)
     {
+        $token = $request->query->get('_token');
+        if (!$this->isTokenValid($token)) {
+            return $this->send403();
+        }
+
         $shop_id = $request->query->get("shop_id") ?: null;
         $shop_group_id = $request->query->get("shop_group_id") ?: null;
 
@@ -129,13 +143,11 @@ class AdminSettingPPLController extends AdminPPLController
             $validator->validate($sender[$key], $errors, "$key");
         }
 
-        if ($errors->errors)
-        {
+        if ($errors->errors) {
             return $this->send400($errors);
         }
 
-        foreach ($sender as $key => $value)
-        {
+        foreach ($sender as $key => $value) {
             $addressId = $sender[$key]->getId();
             $address = new \PPLAddress($addressId > 0 ? $addressId : null);
             $sender[$key] = pplcz_denormalize($sender[$key], \PPLAddress::class, ['data' => $address]);
@@ -149,54 +161,46 @@ class AdminSettingPPLController extends AdminPPLController
     public function GetPrint(Request $request)
     {
         $token = $request->query->get('_token');
-        if ($token !== $this->getToken()) {
+        if (!$this->isTokenValid($token)) {
             return $this->send403();
         }
 
-        $printSetting = \Configuration::getGlobalValue("PPLPrintSetting") ?: "1/PDF";
-        $format = (new CPLOperation())->getFormat($printSetting);
-        return new JsonResponse($format);
+        $printSetting = \PPLShipping\Setting\PrintSetting::getPrintSetting();
+
+        return new JsonResponse($printSetting->getFormat());
     }
 
     public function SetPrint(Request $request)
     {
+        $token = $request->query->get('_token');
+        if (!$this->isTokenValid($token)) {
+            return $this->send403();
+        }
+
         $content = $this->getJson($request);
-        if (is_array($content))
-        {
-            if (!isset($content['shipmentId']) || !$content['shipmentId']) {
-                foreach (['format', 'value', 'printState'] as $key)
-                {
-                    if (isset($content[$key])) {
-                        $content = $content[$key];
-                        break;
-                    }
-                }
-            }
+        $printState = $content['printState'] ?? $content['value'] ?? null;
+        $shipmentId = $content['shipmentId'] ?? null;
+
+        if (!$printState) {
+            return new Response("", 400);
         }
 
+        if ($shipmentId) {
+            \PPLShipment::set_print_state(intval($shipmentId), $printState);
+            return new Response("", 201);
+        }
 
-        $printers = (new \PPLShipping\CPLOperation())->getAvailableLabelPrinters();
-        if (is_string($content)) {
-            foreach ($printers as $v) {
-                if ($v->getCode() === $content) {
-                    \Configuration::updateGlobalValue("PPLPrintSetting", $content);
-                    return new Response("", 204);
-                }
-            }
+        if (\PPLShipping\Setting\PrintSetting::setFormat($printState)) {
+            return new Response("", 201);
         }
-        else if (is_array($content))
-        {
-            pplcz_set_shipment_print($content['shipmentId'], $content['value']);
-            return new Response("", 204);
-        }
+
         return new Response("", 400);
     }
 
-
-    public function  GetAvailablePrinters(Request $request)
+    public function GetAvailablePrinters(Request $request)
     {
         $token = $request->query->get('_token');
-        if ($token !== $this->getToken()) {
+        if (!$this->isTokenValid($token)) {
             return $this->send403();
         }
 
@@ -209,26 +213,20 @@ class AdminSettingPPLController extends AdminPPLController
     public function GetShipmentPhases(Request $request)
     {
         $token = $request->query->get('_token');
-        if ($token !== $this->getToken()) {
+        if (!$this->isTokenValid($token)) {
             return $this->send403();
         }
 
-        $phases = array_map(function ($item) {
-            $phase =  pplcz_denormalize($item, \PPLShipping\Model\Model\ShipmentPhaseModel::class);
-            return $phase;
-        }, pplcz_get_phases());
-
-        $maxSync = pplcz_get_phase_max_sync();
-
-        $sync = new \PPLShipping\Model\Model\SyncPhasesModel();
-        $sync->setMaxSync($maxSync);
-        $sync->setPhases($phases);
-
-        return new JsonResponse(pplcz_normalize($sync));
+        return new JsonResponse(pplcz_normalize(PhaseSetting::getPhases()));
     }
 
     public function SetPhase(Request $request)
     {
+        $token = $request->query->get("_token");
+        if (!$this->isTokenValid($token)) {
+            return $this->send403();
+        }
+
         $data = $this->getJson($request);
         /**
          * @var \PPLShipping\Model\Model\UpdateSyncPhasesModel $value
@@ -236,12 +234,11 @@ class AdminSettingPPLController extends AdminPPLController
         $value = Serializer::getInstance()->denormalize($data, \PPLShipping\Model\Model\UpdateSyncPhasesModel::class);
         if ($value->isInitialized("phases")) {
             foreach ($value->getPhases() as $phase) {
-                pplcz_set_phase($phase->getCode(), $phase->getWatch(), $phase->getOrderState());
+                PhaseSetting::setPhase($phase->getCode(), $phase->getWatch(), $phase->getOrderState());
             }
         }
-        if ($value->isInitialized("maxSync"))
-        {
-            pplcz_set_phase_max_sync($value->getMaxSync());
+        if ($value->isInitialized("maxSync")) {
+            PhaseSetting::setMaxSync($value->getMaxSync());
         }
         return new Response("", 204);
     }
@@ -249,13 +246,13 @@ class AdminSettingPPLController extends AdminPPLController
     public function GetCarriers(Request $request)
     {
         $token = $request->query->get('_token');
-        if ($token !== $this->getToken()) {
+        if (!$this->isTokenValid($token)) {
             return $this->send403();
         }
 
         $carriers = [];
         foreach (\Carrier::getCarriers(0, false, false, null, null, \Carrier::ALL_CARRIERS) as $carrier) {
-            $carrier  = new \Carrier($carrier['id_carrier']);
+            $carrier = new \Carrier($carrier['id_carrier']);
             $model = pplcz_denormalize($carrier, \PPLShipping\Model\Model\PrestaCarrierModel::class);
             $model = pplcz_normalize($model);
             $carriers[] = $model;
@@ -266,6 +263,11 @@ class AdminSettingPPLController extends AdminPPLController
 
     public function PutCarrier(Request $request)
     {
+        $token = $request->query->get('_token');
+        if (!$this->isTokenValid($token)) {
+            return $this->send403();
+        }
+
         $data = $this->getJson($request);
         /**
          * @var \PPLShipping\Model\Model\UpdatePrestaCarrierModel $update
@@ -276,13 +278,11 @@ class AdminSettingPPLController extends AdminPPLController
         $code = $update->getServiceCode();
         $carrier = \Carrier::getCarrierByReference($carrier_id);
 
-        if ($carrier->external_module_name && $carrier->external_module_name !== "pplshipping")
-        {
+        if ($carrier->external_module_name && $carrier->external_module_name !== "pplshipping") {
             return $this->send400();
         }
 
-        if ($code)
-        {
+        if ($code) {
             $carrier->external_module_name = "pplshipping";
             $carrier->is_module = true;
             $carrier->shipping_external = true;
@@ -300,30 +300,39 @@ class AdminSettingPPLController extends AdminPPLController
         return new Response("", 204);
     }
 
-
-    public function GetParcelPlaces(Request $request) {
+    public function GetParcelPlaces(Request $request)
+    {
         $token = $request->query->get('_token');
-        if ($token !== $this->getToken()) {
+        if (!$this->isTokenValid($token)) {
             return $this->send403();
         }
 
         $configuration = new \Configuration();
-        $parcelplaces = pplcz_denormalize($configuration, ParcelPlacesModel::class);
+        //$parcelplaces = pplcz_denormalize($configuration, ParcelPlacesModel::class);
+
+        $parcelplaces = MethodSetting::getGlobalParcelboxesSetting();
 
         return new JsonResponse(pplcz_normalize($parcelplaces));
     }
 
     public function SetParcelPlaces(Request $request)
     {
+        $token = $request->query->get('_token');
+        if (!$this->isTokenValid($token)) {
+            return $this->send403();
+        }
+
         $data = $this->getJson($request);
         $update = pplcz_denormalize($data, ParcelPlacesModel::class);
-        pplcz_denormalize($update, \Configuration::class);
+
+        MethodSetting::setGlobalParcelboxesSetting($update);
+        //pplcz_denormalize($update, \Configuration::class);
         return new Response("", 204);
     }
 
     public function RefreshKey(Request $request)
     {
-        if ($request->query->get("_token") !== $this->getToken())
+        if (!$this->isTokenValid($request->query->get("_token")))
             return $this->send403();
 
         $bytes = openssl_random_pseudo_bytes(16);  // 16 bytů = 128 bitů

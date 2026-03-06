@@ -74,7 +74,7 @@ class PPLAddress extends ObjectModel
 
         if ($finddefault)
         {
-            $content = Configuration::get("PPLSenderAddress", $shop_group_id, $shop_id);
+            $content = Configuration::get("PPLSenderAddress", $idLang = null, $shop_group_id, $shop_id);
             if ($content)
             {
                 $data = array_unique(array_filter(array_map("trim", explode(",", $content)), "ctype_digit"));
@@ -87,7 +87,7 @@ class PPLAddress extends ObjectModel
                         unset($data[$key]);
                     }
                 }
-                return $data;
+                return array_values($data);
             }
             return [];
         }
@@ -122,18 +122,18 @@ class PPLAddress extends ObjectModel
                 }
             }
             $ids = [];
-            return array_filter($addresses, function (PPLAddress $address) use (&$ids)
+            return array_values(array_filter($addresses, function (PPLAddress $address) use (&$ids)
             {
                 if (in_array($address->id, $ids))
                     return false;
                 $ids[] = $address->id;
                 return true;
-            });
+            }));
 
         }
 
 
-        return $data;
+        return array_values($data);
     }
 
     public static function set_default_sender_addresses(array $addresses, $shop_group_id = null, $shop_id = null)

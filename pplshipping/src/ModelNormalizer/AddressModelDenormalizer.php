@@ -1,4 +1,5 @@
 <?php
+
 namespace PPLShipping\ModelNormalizer;
 
 use PluginPpl\MyApi2\Model\EpsApiMyApi2WebModelsCustomerAddressModel;
@@ -12,26 +13,24 @@ class AddressModelDenormalizer implements DenormalizerInterface
 
     public function denormalize($data, string $type, ?string $format = null, array $context = [])
     {
-        if ($data instanceof \PPLAddress)
-        {
+        if ($data instanceof \PPLAddress) {
             if ($type === RecipientAddressModel::class)
                 return $this->PPLAddressToRecipientAddressModel($data, $context);
             else if ($type === SenderAddressModel::class)
                 return $this->PPLAddressToSenderAddressModel($data, $context);
-        }
-        else if ($data instanceof  RecipientAddressModel && $type === \PPLAddress::class)
+        } else if ($data instanceof RecipientAddressModel && $type === \PPLAddress::class)
             return $this->RecipientAddressModelToPPLAddress($data, $context);
-        else if ($data instanceof  SenderAddressModel && $type === \PPLAddress::class)
+        else if ($data instanceof SenderAddressModel && $type === \PPLAddress::class)
             return $this->SenderAddressModelToPPLAddress($data, $context);
         else if ($type === RecipientAddressModel::class && $data instanceof \Order)
             return $this->OrderToRecipientAddressModel($data, $context);
-        else if ($type === CollectionAddressModel::class && $data instanceof EpsApiMyApi2WebModelsCustomerAddressModel )
-        {
+        else if ($type === CollectionAddressModel::class && $data instanceof EpsApiMyApi2WebModelsCustomerAddressModel) {
             return $this->CplCollectionAddressToCollectionAddressModel($data, $type);
         }
     }
 
-    public function OrderToRecipientAddressModel(\Order $data, array $context){
+    public function OrderToRecipientAddressModel(\Order $data, array $context)
+    {
         $address = new RecipientAddressModel();
         $customer = new \Customer($data->id_customer);
         if ($customer->email)
@@ -47,10 +46,10 @@ class AddressModelDenormalizer implements DenormalizerInterface
         $address->setCountry($country->iso_code);
         if ($shippingAddress->company) {
             $address->setName($shippingAddress->company);
-            $address->setName($shippingAddress->firstname . ' ' . $shippingAddress->lastname);
-        }
-        else if ($shippingAddress->firstname)
-        {
+            if ($shippingAddress->firstname || $shippingAddress->lastname) {
+                $address->setContact(trim($shippingAddress->firstname . ' ' . $shippingAddress->lastname));
+            }
+        } else if ($shippingAddress->firstname || $shippingAddress->lastname) {
             $address->setName($shippingAddress->firstname . ' ' . $shippingAddress->lastname);
         }
         return $address;
@@ -61,13 +60,11 @@ class AddressModelDenormalizer implements DenormalizerInterface
         $address = $context["data"] ?? new \PPLAddress();
         if ($address->lock) {
             $address = new \PPLAddress();
-            $address->type = 'recipient';
-            $address->hidden = true;
-        } else {
-            $address->type = 'recipient';
-            $address->hidden = true;
         }
-        $address->name  =$data->getName();
+        $address->type = 'recipient';
+        $address->hidden = true;
+
+        $address->name = $data->getName();
         if ($data->isInitialized("contact"))
             $address->contact = $data->getContact();
         if ($data->isInitialized("mail"))
@@ -183,10 +180,9 @@ class AddressModelDenormalizer implements DenormalizerInterface
 
     public function supportsDenormalization($data, string $type, ?string $format = null)
     {
-        return $data instanceof \PPLAddress && in_array($type, [ RecipientAddressModel::class, SenderAddressModel::class], true)
-            || ($data instanceof RecipientAddressModel || $data instanceof  SenderAddressModel) && $type === \PPLAddress::class
+        return $data instanceof \PPLAddress && in_array($type, [RecipientAddressModel::class, SenderAddressModel::class], true)
+            || ($data instanceof RecipientAddressModel || $data instanceof SenderAddressModel) && $type === \PPLAddress::class
             || $type === RecipientAddressModel::class && $data instanceof \Order
-            || $type === CollectionAddressModel::class && $data instanceof EpsApiMyApi2WebModelsCustomerAddressModel
-            ;
+            || $type === CollectionAddressModel::class && $data instanceof EpsApiMyApi2WebModelsCustomerAddressModel;
     }
 }

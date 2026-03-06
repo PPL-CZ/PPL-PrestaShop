@@ -5,21 +5,18 @@ class AdminOrderPPLController extends AdminPPLController {
 
     public function RedirectOrder($id, \Symfony\Component\HttpFoundation\Request $request)
     {
-        $token = $request->query->get("_token");
-        if ($token !== $this->getToken()) {
+        if (!$this->isTokenValid($request->get("_token"))) {
             return $this->send403();
         }
 
         $link = Context::getContext()->link->getAdminLink('AdminOrders', true, [], ['vieworder' => '', 'id_order' => $id]);
         return new \Symfony\Component\HttpFoundation\RedirectResponse($link . "#pplshippingTab");
 
-
     }
 
     public function RenderOrder($id, \Symfony\Component\HttpFoundation\Request $request)
     {
-        $token = $request->query->get("_token");
-        if ($token !== $this->getToken()) {
+        if (!$this->isTokenValid($request->get("_token"))) {
             return $this->send403();
         }
         $module = Module::getInstanceByName("pplshipping");
@@ -35,8 +32,7 @@ class AdminOrderPPLController extends AdminPPLController {
 
     public function CreateShipment($id, \Symfony\Component\HttpFoundation\Request $request)
     {
-        $token = $request->query->get("_token");
-        if ($token !== $this->getToken()) {
+        if (!$this->isTokenValid($request->get("_token"))) {
             return $this->send403();
         }
 
@@ -55,5 +51,4 @@ class AdminOrderPPLController extends AdminPPLController {
         $response->setStatusCode(201);
         return $response;
     }
-
 }

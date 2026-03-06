@@ -19,7 +19,7 @@ trait  TValidateOrder
                      * @var CartModel $cart
                      */
                     $cart = pplcz_denormalize($params['cart'], CartModel::class, ["carrier" => $carrier]);
-                    if ($cart->getDisabledByRules() || $cart->getDisabledByCountry() || $cart->getDisabledByProduct())
+                    if ($cart->getDisabledByRules() || $cart->getDisabledByCountry() || $cart->getDisabledByProduct() || $cart->getDisabledBySize() || $cart->getDisabledByWeight())
                         unset($params['delivery_option_list'][$key][$ref_id]);
                 }
             }
@@ -34,7 +34,7 @@ trait  TValidateOrder
                  * @var CartModel $cart
                  */
                 $cart = pplcz_denormalize($params['cart'], CartModel::class, ["carrier" => $carrier]);
-                if ($cart->getDisabledByRules() || $cart->getDisabledByCountry() || $cart->getDisabledByProduct())
+                if ($cart->getDisabledByRules() || $cart->getDisabledByCountry() || $cart->getDisabledByProduct() || $cart->getDisabledBySize() || $cart->getDisabledByWeight())
                     unset($params['delivery_option_list_presta17'][$ref_id]);
             }
         }

@@ -76,6 +76,8 @@ function smarty_ppljoin($data, $joiner)
 {
     if (is_array($data))
         return join($joiner, $data);
+
+    // nemělo by spíše být: return $data; ? prohození glue a pieces (navíc oba stringy) bude v php8 fatal
     return join($data, $joiner);
 }
 

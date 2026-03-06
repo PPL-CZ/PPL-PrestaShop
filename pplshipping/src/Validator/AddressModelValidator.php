@@ -21,13 +21,38 @@ class AddressModelValidator extends ModelValidator
                      "name" => "{$basePrefix}Osoba/firma musí být vyplněna",
                      "street" => "{$basePrefix}Ulice musí být vyplněna",
                      "city" => "{$basePrefix}Město musí být vyplněno",
-                     "zip" => "{$basePrefix}Není vyplněno PSČ",
                      "country" => "{$basePrefix}Není určen stát"
                  ] as $property => $message) {
             if (!$model->isInitialized($property) || !$model->{"get{$property}"}())
             {
                 $error->add($path . ".{$property}", $message);
             }
+        }
+
+        if ($model instanceof RecipientAddressModel)
+        {
+            $name = $model->getName() ?: "";
+            $name = join(' ', preg_split('~\s+~', trim($name)));
+
+            if (mb_strlen($name) > 100)
+                $error->add($path . '.name', "{$basePrefix} může být jméno max 100 znaků");
+
+            $contact = $model->getContact() ?: "";
+            $contact = join(' ', preg_split('~\s+~', trim($contact)));
+
+            if (mb_strlen($contact ?: "") > 50)
+                $error->add($path . '.contact', "{$basePrefix} může být kontakt max 50 znaků");
+
+            if (mb_strlen($model->getStreet() ?: "") > 60)
+                $error->add($path . '.street', "{$basePrefix} může být ulice max 60 znaků");
+
+            if (mb_strlen($model->getCity() ?: "") > 50)
+                $error->add($path . '.city', "{$basePrefix} může být město max 50 znaků");
+        }
+
+        if (!self::isZip($model->getCountry(), $model->getZip()))
+        {
+            $error->add($path . ".zip","{$basePrefix} Je problematické PSČ pro danou zemi");
         }
 
         if ($model->isInitialized("mail") && $model->getMail())
@@ -51,11 +76,6 @@ class AddressModelValidator extends ModelValidator
             {
                 $error->add($path . ".addressName", "U odesílatele je potřeba vyplnit název adresy");
             }
-        }
-
-        if ($model->getCountry() && $model->getZip() && !self::isZip($model->getCountry(), $model->getZip()))
-        {
-            $error->add($path . ".zip","{$basePrefix} Je problematické PSČ pro danou zemi");
         }
     }
 }
