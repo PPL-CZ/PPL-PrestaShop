@@ -1,0 +1,35 @@
+name: Update version info JSON
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-json:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate update JSON
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          TAG="${GITHUB_REF_NAME}"
+
+          cat > updates/latest.json << EOF
+          {
+              "version": "${VERSION}",
+              "url": "https://github.com/PPL-CZ/PPL-PrestaShop/releases/tag/${TAG}",
+              "download": "https://github.com/PPL-CZ/PPL-PrestaShop/releases/download/${TAG}/pplshipping-${VERSION}.zip"
+          }
+          EOF
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add updates/latest.json
+          git commit -m "Update version info for ${GITHUB_REF_NAME}"
+          git push
