@@ -75,6 +75,7 @@
           "pplSize" : {
             "$ref": "#/components/schemas/PackageSizeModel"
           }
+
         }
       },
       "PackageSizeModel": {
@@ -1651,6 +1652,26 @@
           },
           "lock": {
             "type": "boolean"
+          }
+        }
+      },
+      "GlobalSettingMapModel": {
+        "type": "object",
+        "properties": {
+          "apikey": {
+            "type": "string",
+            "nullable": true
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "GlobalSettingModel": {
+        "type": "object",
+        "properties": {
+          "map": {
+            "$ref": "#/components/schemas/GlobalSettingMapModel"
           }
         }
       }

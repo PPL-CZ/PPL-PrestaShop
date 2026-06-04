@@ -133,6 +133,18 @@ pplshipping_setting_put_parcelplaces:
   defaults:
     _controller: AdminSettingPPLController::SetParcelPlaces
 
+pplshipping_setting_get_globalsetting:
+  path: /admin/pplshipping/setting/globalsetting
+  methods: [GET]
+  defaults:
+    _controller: AdminSettingPPLController::GetGlobalSetting
+
+pplshipping_setting_set_globalsetting:
+  path: /admin/pplshipping/setting/globalsetting
+  methods: [PUT, POST]
+  defaults:
+    _controller: AdminSettingPPLController::SetGlobalSetting
+
 
 pplshipping_shipment_replacement:
   path: /admin/pplshipping/shipment/replacementPath   # Cesta, kterou route obsluhuje, může obsahovat dynamické parametry

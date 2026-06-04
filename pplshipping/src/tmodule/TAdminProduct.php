@@ -15,7 +15,7 @@ use Symfony\Component\Form\FormEvents;
 
 trait TAdminProduct {
 
-
+    // Uloží pravidla produktu (legacy 1.6/1.7)
     public function hookActionProductUpdate($params)
     {
         $postData = $_POST;
@@ -34,7 +34,7 @@ trait TAdminProduct {
         $table->save();
         return;
     }
-
+    // Uloží pravidla produktu (legacy 1.6/1.7)
     public function hookActionCategoryUpdate($params)
     {
         $postData = $_POST;
@@ -58,7 +58,7 @@ trait TAdminProduct {
         $table->save();
         return;
     }
-
+    // Uloží pravidla produktu (Symfony 1.7/8/9)
     public function hookActionAfterUpdateProductFormHandler($params)
     {
 
@@ -78,7 +78,7 @@ trait TAdminProduct {
         $table->save();
         return;
     }
-
+    // Uloží pravidla kategorie (Symfony 1.7/8/9)
     public function hookActionAfterUpdateCategoryFormHandler($params)
     {
         $obj = \PPLBaseDisabledRule::getByCagetory($params['id']);
@@ -102,7 +102,7 @@ trait TAdminProduct {
         return;
     }
 
-
+    //Zobrazí PPL pole v kategorii (legacy 1.6/1.7)
     public function hookActionAdminCategoriesFormModifier($params)
     {
         $id = $params['object']->id;
@@ -181,7 +181,7 @@ trait TAdminProduct {
         }
         $params['fields'][] = $newform;
     }
-
+    //Zobrazí PPL pole v kategorii (Symfony 1.7/8/9)
     public function hookActionCategoryFormBuilderModifier($params)
     {
         if (!isset($params['id']) || !(int)$params['id'])
@@ -199,7 +199,7 @@ trait TAdminProduct {
 
         $this->createFormBuildertAdminProduct($model, $params['form_builder'], false);
     }
-
+    // Zobrazí PPL pole v produktu (Symfony 1.6/1.7)
     public function hookDisplayAdminProductsShippingStepBottom($params)
     {
         if (!isset($params['id_product']) || !(int)$params['id_product'])
@@ -227,7 +227,7 @@ trait TAdminProduct {
         $result = $this->display($this->getReflFile(), "views/templates/admin/rules.tpl");
         return $result;
     }
-
+    // Zobrazí PPL pole v produktu (Symfony 1.7/8/9)
     public function hookActionProductFormBuilderModifier($params)
     {
         if (!isset($params['id']) || !(int)$params['id'])
@@ -246,7 +246,7 @@ trait TAdminProduct {
         $this->createFormBuildertAdminProduct($model, $params['form_builder'], true);
     }
 
-
+    // Převede normalizovaný model na pole pravidel s metadaty
     private function getTAdminProductRules($model)
     {
         $values = array_map(function ($key, $item) {
@@ -306,7 +306,7 @@ trait TAdminProduct {
     }
 
 
-
+    // Přidá PPL pole do Symfony FormBuilder
     private function createFormBuildertAdminProduct($model, FormBuilderInterface $formBuilder, bool $asProduct) {
         $data = $formBuilder->getData();
         if ($asProduct) {

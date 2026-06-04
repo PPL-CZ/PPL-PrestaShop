@@ -45,6 +45,14 @@ class CartModelDenormalizer implements DenormalizerInterface
            $shipmentCartModel->setMapEnabled(pplcz_parcel_required($code));
         }
 
+        if ($shipmentCartModel->getParcelRequired()) {
+            $globalMapSetting = MethodSetting::getGlobalSetting()->getMap();
+            $enabledMap = $globalMapSetting && $globalMapSetting->getApikey() ? true : false;
+            $shipmentCartModel->setMapEnabled($shipmentCartModel->getMapEnabled() && $enabledMap);
+            if (!$enabledMap)
+                $shipmentCartModel->setDisabledByRules(true);
+        }
+
         $codCountries = pplcz_get_cod_currencies();
         $addressId = $data->id_address_delivery;
         $address = new \Address($addressId);
@@ -281,6 +289,12 @@ class CartModelDenormalizer implements DenormalizerInterface
                 }
             }
         }
+
+        $shipmentCartModel->setMapEnabled(
+            $shipmentCartModel->getMapEnabled()
+            && ($shipmentCartModel->getParcelShopEnabled() || $shipmentCartModel->getParcelBoxEnabled() || $shipmentCartModel->getAlzaBoxEnabled())
+            && !$shipmentCartModel->getDisabledByCountry()
+        );
 
         if (!$shipmentCartModel->getParcelShopEnabled() && !$shipmentCartModel->getParcelBoxEnabled() && !$shipmentCartModel->getAlzaBoxEnabled() && $shipmentCartModel->getParcelRequired())
         {

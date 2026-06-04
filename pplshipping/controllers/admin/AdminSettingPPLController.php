@@ -330,6 +330,28 @@ class AdminSettingPPLController extends AdminPPLController
         return new Response("", 204);
     }
 
+    public function GetGlobalSetting(Request $request)
+    {
+        $token = $request->query->get("_token");
+        if (!$this->isTokenValid($token)) {
+            return $this->send403();
+        }
+        $globalSetting = MethodSetting::getGlobalSetting();
+        return new JsonResponse(pplcz_normalize($globalSetting));
+    }
+
+    public function SetGlobalSetting(Request $request)
+    {
+        $token = $request->query->get('_token');
+        if (!$this->isTokenValid($token)) {
+            return $this->send403();
+        }
+        $data = $this->getJson($request);
+        $update = pplcz_denormalize($data, \PPLShipping\Model\Model\GlobalSettingModel::class);
+        MethodSetting::setGlobalSetting($update);
+        return new Response("", 204);
+    }
+
     public function RefreshKey(Request $request)
     {
         if (!$this->isTokenValid($request->query->get("_token")))

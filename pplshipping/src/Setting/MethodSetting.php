@@ -1,11 +1,34 @@
 <?php
 namespace PPLShipping\Setting;
 
+use PPLShipping\Model\Model\GlobalSettingMapModel;
+use PPLShipping\Model\Model\GlobalSettingModel;
 use PPLShipping\Model\Model\ParcelPlacesModel;
 use PPLShipping\Model\Model\ShipmentMethodModel;
 
 class MethodSetting
 {
+    public static function getGlobalSetting()
+    {
+        $globalSetting = new GlobalSettingModel();
+        $globalSettingMapModel = new GlobalSettingMapModel();
+        $globalSettingMapModel->setApikey(\Configuration::getGlobalValue("PPLMapApiKey") ?: null);
+        $globalSettingMapModel->setEnabled(!!\Configuration::getGlobalValue("PPLUseNewMap"));
+        $globalSetting->setMap($globalSettingMapModel);
+        return $globalSetting;
+    }
+
+    public static function setGlobalSetting(GlobalSettingModel $model)
+    {
+        $map = $model->getMap();
+        if ($map) {
+            $apikey = $map->getApikey();
+            $enabled = $apikey ? true : false;
+            \Configuration::updateGlobalValue("PPLMapApiKey", $apikey ?: '');
+            \Configuration::updateGlobalValue("PPLUseNewMap", $enabled ? 1 : 0);
+        }
+    }
+
     public static function getGlobalParcelboxesSetting()
     {
         $parcelPlaces = new ParcelPlacesModel();

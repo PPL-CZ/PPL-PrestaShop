@@ -191,6 +191,51 @@ function pplcz_get_map_args() {
 }
 
 
+function pplcz_get_new_map_args() {
+    $map = \PPLShipping\Setting\MethodSetting::getGlobalSetting()->getMap();
+
+    $lat = Tools::getValue('ppl_lat');
+    $lng = Tools::getValue('ppl_lng');
+    $withCash = Tools::getValue('ppl_withCash');
+    $country = Tools::getValue('ppl_country');
+    $countries = Tools::getValue("ppl_countries");
+    $address = Tools::getValue('ppl_address');
+    $hiddenpoints = Tools::getValue("ppl_hiddenpoints");
+
+    $parcelplaces = pplcz_denormalize(new \Configuration(), \PPLShipping\Model\Model\ParcelPlacesModel::class);
+    $lang = $parcelplaces->getMapLanguage();
+    if (!in_array($lang, ["CS", "EN"], true))
+        $lang = "CS";
+
+    $hiddenPoints = array_filter(explode(',', $hiddenpoints ?: ''));
+    $allowedAccessPoint = array_diff(['AlzaBox', 'ParcelBox', 'ParcelShop'], $hiddenPoints);
+
+    $config = [
+        'mode' => 'SHOPCART',
+        'allowedAccessPointTypes' => array_values($allowedAccessPoint),
+        //'allowedCountries' => array_values(array_map('strtoupper',explode(',', $countries))),
+        'allowedCountries' => array(strtoupper($country)),
+        'defaultLanguage' => strtolower($lang),
+        'viewMode' => 'inline',
+        'defaultCountry' => strtoupper($country),
+        'disabledAccessPointTypes' => $hiddenPoints,
+    ];
+
+    if ($address)
+        $config['centeredToAddress'] = $address;
+
+    if (floatval($lat) && floatval($lng)) {
+        $config['centeredToLat'] = $lat;
+        $config['centeredToLon'] = $lng;
+    }
+
+    if ($withCash)
+        $config['codRequired'] = true;
+
+    return ['apikey' => $map->getApikey(), 'config' => $config];
+}
+
+
 spl_autoload_register(function ($class) {
     switch ($class)
     {

@@ -14,7 +14,7 @@ trait TAdminSetMedia
 
     public function hookActionAdminControllerSetMedia($params)
     {
-        $assetGeneratedName = "-1.0.6";
+        $assetGeneratedName = "-1.1.0";
 
         /**
          * @var \pplshipping $this
@@ -52,7 +52,10 @@ trait TAdminSetMedia
 
         if ($router)
         {
-            return $router->generate($name, [], Router::ABSOLUTE_URL);
+            try {
+                return $router->generate($name, [], Router::ABSOLUTE_URL);
+            } catch (\Exception $ex) {
+            }
         }
 
         static $routes;
@@ -117,7 +120,9 @@ trait TAdminSetMedia
     window.pplPlugin.api = <?php echo json_encode($api) ?>;
 </script>
 <?php
-    return ob_get_clean();
+    $html = ob_get_clean();
+
+    return $html;
     }
 
 }
