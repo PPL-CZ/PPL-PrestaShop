@@ -6,8 +6,7 @@ Všechny důležité změny v PPL PrestaShop pluginu.
 
 ### Opravy
 - Autentizace PPL API na PHP 7.x — nahrazení file_get_contents() za cURL v getAccessToken().
-- Odebrány neplatné parametry konfigurace mapového widgetu — mode a allowedAccessPointTypes, opraven defaultLanguage na defaultLang dle
-  aktuální specifikace PPL widgetu.
+- Odebrány neplatné parametry konfigurace mapového widgetu — mode a allowedAccessPointTypes, opraven defaultLanguage na defaultLang dle aktuální specifikace PPL widgetu.
 
 ## [1.1.0] - 2026-06-04
 
