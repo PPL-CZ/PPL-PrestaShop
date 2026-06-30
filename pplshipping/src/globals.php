@@ -129,68 +129,6 @@ function pplcz_set_shipment_print($shipmentId, $print)
     PPLShipment::set_print_state($shipmentId, $print);
 }
 
-
-
-function pplcz_get_map_args() {
-    $lat = Tools::getValue('ppl_lat');
-    $lng = Tools::getValue('ppl_lng');
-    $withCard = Tools::getValue('ppl_withCard');
-    $withCash = Tools::getValue('ppl_withCash');
-    $country = Tools::getValue('ppl_country');
-    $countries = Tools::getValue("ppl_countries");
-    $address = Tools::getValue('ppl_address');
-    $hiddenpoints = Tools::getValue("ppl_hiddenpoints");
-
-    $parcelplaces = pplcz_denormalize(new \Configuration(), \PPLShipping\Model\Model\ParcelPlacesModel::class);
-    $lang = $parcelplaces->getMapLanguage();
-    if (!in_array($lang,[ "CS", "EN"], true))
-        $lang = "CS";
-
-    $data = [];
-
-    $data['data-language'] = strtolower($lang);
-
-
-    if (floatval($lat) && floatval($lng)) {
-        $data["data-lat"] = $lat;
-        $data["data-lng"] = $lng;
-    }
-
-
-    $data["data-initialfilters"] = [];
-
-    if (intval($withCard))
-        $data["data-initialfilters"][] = "CardPayment";
-    if (intval($withCash))
-        $data["data-initialfilters"][] = "ParcelShop";
-
-    if (isset($data['data-initialfilters']) && !$data["data-initialfilters"]) {
-        unset($data["data-initialfilters"]);
-    } else {
-        $data["data-initialfilters"] = join(',', $data["data-initialfilters"]);
-    }
-    if ($hiddenpoints)
-        $data['data-hiddenpoints'] = $hiddenpoints;
-    if ($countries)
-        $data['data-countries'] = strtolower($countries);
-
-    if (isset($data['data-lat']) && $data["data-lat"]) {
-        $data["data-mode"] = "static";
-    }
-
-    if ($address)
-    {
-        $data["data-address"] = $address;
-    }
-
-    if ($country)
-    {
-        $data['data-country'] = $country;
-    }
-    return $data;
-}
-
-
 function pplcz_get_new_map_args() {
     $map = \PPLShipping\Setting\MethodSetting::getGlobalSetting()->getMap();
 
@@ -198,7 +136,6 @@ function pplcz_get_new_map_args() {
     $lng = Tools::getValue('ppl_lng');
     $withCash = Tools::getValue('ppl_withCash');
     $country = Tools::getValue('ppl_country');
-    $countries = Tools::getValue("ppl_countries");
     $address = Tools::getValue('ppl_address');
     $hiddenpoints = Tools::getValue("ppl_hiddenpoints");
 
@@ -208,14 +145,10 @@ function pplcz_get_new_map_args() {
         $lang = "CS";
 
     $hiddenPoints = array_filter(explode(',', $hiddenpoints ?: ''));
-    $allowedAccessPoint = array_diff(['AlzaBox', 'ParcelBox', 'ParcelShop'], $hiddenPoints);
 
     $config = [
-        'mode' => 'SHOPCART',
-        'allowedAccessPointTypes' => array_values($allowedAccessPoint),
-        //'allowedCountries' => array_values(array_map('strtoupper',explode(',', $countries))),
         'allowedCountries' => array(strtoupper($country)),
-        'defaultLanguage' => strtolower($lang),
+        'defaultLang' => strtolower($lang),
         'viewMode' => 'inline',
         'defaultCountry' => strtoupper($country),
         'disabledAccessPointTypes' => $hiddenPoints,

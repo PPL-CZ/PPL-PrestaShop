@@ -152,31 +152,35 @@ class CPLOperation
             $content["client_secret"] = $client_secret;
         }
 
-        $opts = array('http' => array_merge([
-                'ignore_errors' => true,
-                'method' => 'POST',
-                'header' => join("\r\n", $headers),
-                'content' => http_build_query($content),
-            ], $timeout ? ['timeout' => $timeout] : []));
-
-        $context = stream_context_create($opts);
         $url = self::ACCESS_TOKEN_URL;
-        $content = @file_get_contents("{$url}", false, $context);
 
-        if (strpos($http_response_header[0], "200 OK")) {
-            if ($content) {
-                $tokens = json_decode($content, true);
-                \Configuration::updateGlobalValue("PPLAccessToken", $tokens["access_token"]);
-                \Configuration::deleteByName("PPLAccessTokenError");
-                return $tokens["access_token"];
-            }
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => http_build_query($content),
+            CURLOPT_HTTPHEADER => $headers,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => $timeout ?: 30,
+        ]);
+        $content = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        if ($httpCode === 200 && $content) {
+            $tokens = json_decode($content, true);
+            \Configuration::updateGlobalValue("PPLAccessToken", $tokens["access_token"]);
+            \Configuration::deleteByName("PPLAccessTokenError");
+            return $tokens["access_token"];
         } else {
             $errorMaker = "Url: {$url}\n";
-            $errorMaker .= join("\n", $http_response_header);
+            $errorMaker .= "HTTP code: {$httpCode}\n";
+            if ($curlError)
+                $errorMaker .= "cURL error: {$curlError}\n";
             if ($content)
-                $errorMaker .= "\n" . $content;
+                $errorMaker .= $content;
             else
-                $errorMaker .= "\nno content";
+                $errorMaker .= "no content";
             \Configuration::updateGlobalValue("PPLAccessTokenError", $errorMaker);
         }
 
