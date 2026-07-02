@@ -2,6 +2,11 @@
 
 Všechny důležité změny v PPL PrestaShop pluginu.
 
+## [1.1.2] - 2026-07-02
+
+### Vylepšení
+- Odstranění opcache_reset() a apcu_clear_cache() z clearCache() — zamezení PHP warning na hostinzích s restrict_api
+
 ## [1.1.1] - 2026-06-30
 
 ### Opravy

@@ -18,7 +18,7 @@ class pplshipping extends CarrierModule {
     {
         $this->name = 'pplshipping';
         $this->tab = 'shipping_logistics';
-        $this->version = '1.1.1';
+        $this->version = '1.1.2';
         $this->author = 'PPL';
         $this->need_instance = 1;
         parent::__construct();
@@ -118,14 +118,6 @@ class pplshipping extends CarrierModule {
         \Tools::clearXMLCache();
         \Tools::clearAllCache();
 
-        // 3) PHP OPcache (reset bajtkódu)
-        if (function_exists('opcache_reset')) {
-            opcache_reset();
-        }
-        // 4) APCu
-        if (function_exists('apcu_clear_cache')) {
-            apcu_clear_cache();
-        }
         $prefix = _DB_PREFIX_;
 
         try {
