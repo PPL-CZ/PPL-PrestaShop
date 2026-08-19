@@ -1,0 +1,37 @@
+
+.pplcz-parcelshop-inner
+{
+    margin-top: 0.5em;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 0.5em;
+}
+
+.pplcz-parcelshop-inner .selected-parcelshop {
+    margin-left: 1em;
+}
+
+.pplcz-parcelshop-inner .selected-parcelshop .clear-map, .woocommmerce-ppl-parcelshop-inner .selected-parcelshop .show-map
+{
+    font-size: 0.7em;
+    position: relative;
+    top: -0.3em;
+}
+
+.pplcz-parcelshop-inner a.select-parcelshop {
+    border-radius: 2em;
+    height: 2.5em;
+    width: 2.5em;
+    display: inline-block;
+    background: #F0f0f0;
+    position: relative;
+}
+
+.pplcz-parcelshop-inner a.select-parcelshop img {
+    height: 2em;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}

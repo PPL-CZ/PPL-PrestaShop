@@ -125,6 +125,12 @@ class PPLShipment extends ObjectModel {
 
     public function unlock()
     {
+        /**
+         * nemá smysl odemykat záznam, který už je odeslán a akceptován PPL.
+         */
+        if (!in_array($this->import_state ?: "", ["None", "Error", ""], true))
+            throw new \Exception("Lock");
+
         $address = new PPLAddress($this->id_recipient_address);
         if ($address->id)
         {
@@ -136,10 +142,24 @@ class PPLShipment extends ObjectModel {
         {
             $package = new PPLPackage($id);
             $package->lock = false;
+            $package->import_error = null;
+            $package->import_error_code = null;
             $package->save();
         }
         $this->lock = false;
+        $this->import_state = "None";
+        $this->import_errors = null;
         $this->save();
+
+        if ($this->id_batch_local)
+        {
+            $batch = new PPLBatch($this->id_batch_local);
+            if ($batch->id && $batch->lock && !$batch->remote_batch_id)
+            {
+                $batch->lock = false;
+                $batch->save();
+            }
+        }
     }
 
 

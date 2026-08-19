@@ -266,7 +266,9 @@ class CPLOperation
             $shipmentBatchApi = new ShipmentBatchApi($client, $configuration);
 
             $output = $shipmentBatchApi->createShipmentsWithHttpInfo($creator, "cs-CZ");
-            $location = reset($output[2]["Location"]);
+            $output[2] = array_change_key_case($output[2], CASE_LOWER);
+
+            $location = reset($output[2]["location"]);
             $location = explode("/", $location);
             $batch_id = end($location);
 
@@ -391,7 +393,8 @@ class CPLOperation
             if (!$httpData) {
                 return;
             }
-            header("Content-Type: " . $httpData[2]["Content-Type"][0]);
+            $httpData[2] = array_change_key_case($httpData[2], CASE_LOWER);
+            header("Content-Type: " . $httpData[2]["content-type"][0]);
             /**
              * @var \SplFileInfo $file
              */
@@ -452,7 +455,8 @@ class CPLOperation
             if (!$httpData) {
                 return;
             }
-            header("Content-Type: " . $httpData[2]["Content-Type"][0]);
+            $httpData[2] = array_change_key_case($httpData[2], CASE_LOWER);
+            header("Content-Type: " . $httpData[2]["content-type"][0]);
             $file = $httpData[0];
 
             $path = $file->getPathname();
@@ -643,7 +647,9 @@ class CPLOperation
 
         $output = $order->createOrdersWithHttpInfo($modelBatch);
 
-        $location = reset($output[2]["Location"]);
+        $output[2] = array_change_key_case($output[2], CASE_LOWER);
+
+        $location = reset($output[2]["location"]);
         $location = explode("/", $location);
         $batch_id = end($location);
 

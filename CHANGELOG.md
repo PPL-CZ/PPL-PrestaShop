@@ -2,6 +2,11 @@
 
 Všechny důležité změny v PPL PrestaShop pluginu.
 
+## [1.1.3] - 2026-08-19
+
+### Opravy
+- oprava parsování hlaviček Location a Content-Type z odpovědi PPL API (normalizace klíčů na lowercase)
+
 ## [1.1.2] - 2026-07-02
 
 ### Vylepšení

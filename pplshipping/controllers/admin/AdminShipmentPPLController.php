@@ -18,8 +18,15 @@ class AdminShipmentPPLController extends AdminPPLController
     public function loadShipment($id, $edit = false)
     {
         $shipmentData = new \PPLShipment($id);
-        if ($shipmentData->lock && $edit)
-            return $this->send403();
+        if ($shipmentData->lock)
+        {
+            try {
+                $shipmentData->unlock();
+            } catch (\Exception $ex) {
+                if ($edit)
+                    return $this->send403();
+            }
+        }
 
         return $shipmentData;
     }
