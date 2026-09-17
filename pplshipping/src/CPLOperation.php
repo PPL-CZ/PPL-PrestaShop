@@ -288,7 +288,28 @@ class CPLOperation
             $batchdata->save();
             foreach ($shipments as $position => $shipment) {
 
-                $shipment->unlock();
+                /**
+                 * Zámek uvolňujeme přímo (dle vzoru WooCommerce), ne přes unlock() - ten vyhazuje
+                 * výjimku u zásilky, kterou už PPL přijala, a přebil by původní chybu z API.
+                 */
+                if ($shipment->lock) {
+                    $shipment->lock = false;
+                    $shipment->save();
+
+                    $address = new \PPLAddress($shipment->id_recipient_address);
+                    if ($address->id && $address->lock) {
+                        $address->lock = false;
+                        $address->save();
+                    }
+
+                    foreach ($shipment->get_package_ids() as $packageId) {
+                        $package = new PPLPackage($packageId);
+                        if ($package->id && $package->lock) {
+                            $package->lock = false;
+                            $package->save();
+                        }
+                    }
+                }
                 if ($ex instanceof ApiException && $ex->getResponseObject() instanceof EpsApiInfrastructureWebApiModelProblemJsonModel) {
                     /**
                      * @var array<string,string[]> $error
@@ -477,7 +498,10 @@ class CPLOperation
     public function loadingShipmentNumbers($batchIds = [])
     {
         $batch_label_group = gmdate("Y-m-d H:i:s");
-        foreach ($batchIds as $item) {
+        /**
+         * Zásilka bez remote batch id se do PPL nikdy nedostala - nemá smysl se na ni ptát.
+         */
+        foreach (array_filter($batchIds) as $item) {
 
             list($client, $configuration) = $this->createClientAndConfiguration();
 

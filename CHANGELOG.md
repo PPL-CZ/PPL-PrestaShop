@@ -2,6 +2,11 @@
 
 Všechny důležité změny v PPL PrestaShop pluginu.
 
+## [1.1.4] - 2026-09-17
+
+### Opravy
+- oprava nekonečného opakování dotazů při čekání na etikety u dávky, která se nedostala do PPL — zaseknuté zásilky se odemknou a tisk lze zopakovat
+
 ## [1.1.3] - 2026-08-19
 
 ### Opravy

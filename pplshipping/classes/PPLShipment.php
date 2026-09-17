@@ -123,6 +123,31 @@ class PPLShipment extends ObjectModel {
 
     }
 
+    /**
+     * Odemkne zásilku zaseknutou po neúspěšném vytvoření etiket.
+     * Prázdné batch_id znamená, že zásilka do PPL nikdy nedorazila, takže stav InProgress
+     * je nekonzistentní a je bezpečné ho zahodit. Zásilky s batch_id se nedotýkáme.
+     *
+     * @return bool
+     */
+    public function unlockStuck()
+    {
+        if (!$this->lock || $this->batch_id)
+            return false;
+
+        if ($this->import_state === "InProgress") {
+            $this->import_state = "None";
+            $this->save();
+        }
+
+        try {
+            $this->unlock();
+            return true;
+        } catch (\Exception $ex) {
+            return false;
+        }
+    }
+
     public function unlock()
     {
         /**

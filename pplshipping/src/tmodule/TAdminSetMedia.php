@@ -14,7 +14,7 @@ trait TAdminSetMedia
 
     public function hookActionAdminControllerSetMedia($params)
     {
-        $assetGeneratedName = "-1.1.3";
+        $assetGeneratedName = "-1.1.4";
 
         /**
          * @var \pplshipping $this

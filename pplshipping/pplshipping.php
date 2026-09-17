@@ -18,7 +18,7 @@ class pplshipping extends CarrierModule {
     {
         $this->name = 'pplshipping';
         $this->tab = 'shipping_logistics';
-        $this->version = '1.1.3';
+        $this->version = '1.1.4';
         $this->author = 'PPL';
         $this->need_instance = 1;
         parent::__construct();

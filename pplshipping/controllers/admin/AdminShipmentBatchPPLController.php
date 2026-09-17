@@ -84,20 +84,69 @@ class AdminShipmentBatchPPLController extends AdminPPLController
         return new \Symfony\Component\HttpFoundation\JsonResponse($output,  200);
     }
 
+    /**
+     * Odemkne zásilky, které zůstaly zamčené po neúspěšném vytvoření etiket.
+     * Zásilek, které už PPL přijala (mají batch_id), se unlockStuck() nedotkne.
+     *
+     * @param PPLShipment[] $shipments
+     * @return void
+     */
+    protected function unlockStuckShipments($shipments)
+    {
+        foreach ($shipments as $shipment) {
+            $shipment->unlockStuck();
+        }
+    }
+
+    /**
+     * Vrátí remote id batchů, ve kterých zásilky čekají na zpracování v PPL.
+     *
+     * @param PPLShipment[] $shipments
+     * @return string[]
+     */
+    protected function collectRemoteBatchIds($shipments, $localBatchId)
+    {
+        $remoteBatchIds = array_values(array_unique(array_filter(array_map(function (PPLShipment $item) {
+            return $item->batch_id;
+        }, $shipments))));
+
+        if ($remoteBatchIds)
+            return $remoteBatchIds;
+
+        $batch = new PPLBatch($localBatchId);
+        if ($batch->id && $batch->remote_batch_id)
+            return [$batch->remote_batch_id];
+
+        return [];
+    }
+
     public function RefreshLabels($id, Request $request)
     {
         if (!$this->isTokenValid($request->get("_token")))
             return $this->send403();
 
-        $shipment = PPLShipment::findShipmentsByLocalBatchId($id);
+        $shipments = PPLShipment::findShipmentsByLocalBatchId($id);
 
-        if (!$shipment)
+        if (!$shipments)
             return new Response("", 404);
 
-        $shipment = $shipment[0];
+        $remoteBatchIds = $this->collectRemoteBatchIds($shipments, $id);
+
+        if (!$remoteBatchIds) {
+            /**
+             * Vytvoření etiket selhalo dřív, než PPL vrátilo id batche - není na co čekat.
+             * Zásilky odemkneme, aby šlo vytvoření zopakovat, a ukončíme čekání na etikety.
+             */
+            $this->unlockStuckShipments($shipments);
+            return new Response("", 409);
+        }
 
         $operations = new CPLOperation();
-        $operations->loadingShipmentNumbers([$shipment->batch_id]);
+        try {
+            $operations->loadingShipmentNumbers($remoteBatchIds);
+        } catch (\Exception $exception) {
+            return new Response("", 502);
+        }
 
         $refresh = new RefreshShipmentBatchReturnModel();
 
@@ -112,10 +161,7 @@ class AdminShipmentBatchPPLController extends AdminPPLController
         }, \PPLShipment::findShipmentsByLocalBatchId($id));
 
         $refresh->setShipments($output);
-        if (isset($output[0]['batchRemoteId']) )
-            $refresh->setBatchs([$output[0]['batchRemoteId']]);
-        else
-            $refresh->setBatchs([]);
+        $refresh->setBatchs($remoteBatchIds);
 
         return  new \Symfony\Component\HttpFoundation\JsonResponse(pplcz_normalize($refresh), $status ? 200 : 204);
     }
@@ -222,6 +268,13 @@ class AdminShipmentBatchPPLController extends AdminPPLController
 
 
         $shipments = PPLShipment::findShipmentsByLocalBatchId($batchId);
+
+        /**
+         * Zásilky zaseknuté po neúspěšném vytvoření etiket odemkneme už při načtení,
+         * jinak se dialog tisku rovnou přepne do čekání na etikety, které nikdy nedorazí.
+         */
+        $this->unlockStuckShipments($shipments);
+
         foreach ($shipments as $key => $shipment)
         {
             $shipment = pplcz_denormalize($shipment, ShipmentWithAdditionalModel::class);

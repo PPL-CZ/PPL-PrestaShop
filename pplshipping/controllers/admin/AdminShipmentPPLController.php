@@ -21,7 +21,8 @@ class AdminShipmentPPLController extends AdminPPLController
         if ($shipmentData->lock)
         {
             try {
-                $shipmentData->unlock();
+                if (!$shipmentData->unlockStuck())
+                    $shipmentData->unlock();
             } catch (\Exception $ex) {
                 if ($edit)
                     return $this->send403();
@@ -178,6 +179,14 @@ class AdminShipmentPPLController extends AdminPPLController
         if (!$shipment->id) {
             return new JsonResponse("", 404);
         }
+
+        /**
+         * Bez remote batch id zásilka do PPL nikdy nedorazila - není co načítat.
+         */
+        if (!$shipment->batch_id) {
+            return new JsonResponse("", 409);
+        }
+
         try {
             (new CPLOperation())->loadingShipmentNumbers([$shipment->batch_id]);
             return new JsonResponse("", 204);
